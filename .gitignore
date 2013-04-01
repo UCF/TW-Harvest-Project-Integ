@@ -1,0 +1,9 @@
+# IDE
+.idea
+.DS_Store
+
+# Compiled
+*.pyc
+
+# Settings
+settings_local.py
