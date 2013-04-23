@@ -7,6 +7,18 @@ import settings
 import datetime
 import re
 
+
+def main():
+    handler = TeamworkHandler
+    httpd = SocketServer.TCPServer(('127.0.0.1', 8181), handler)
+    print("Serving at port", 8181)
+    # try:
+    httpd.serve_forever()
+    # except KeyboardInterrupt:
+    # 	print('Shutting down server...')
+    # 	httpd.shutdown()
+
+
 class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
     class TeamworkException(Exception):
@@ -37,14 +49,13 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         form = cgi.FieldStorage(
             fp=self.rfile,
             headers=self.headers,
-            environ={'REQUEST_METHOD':'POST',
-                'CONTENT_TYPE':self.headers['Content-Type'],
-                })
+            environ={'REQUEST_METHOD': 'POST',
+                     'CONTENT_TYPE': self.headers['Content-Type']})
 
         postValues = self.getPostValues(form)
 
-        if postValues[settings.EVENT] == settings.PROJECT_CREATED or \
-                        postValues[settings.EVENT] == settings.PROJECT_UPDATED:
+        if postValues[settings.EVENT] == settings.PROJECT_CREATED or postValues[settings.EVENT] == \
+                settings.PROJECT_UPDATED:
             self.setProjectCode(postValues[settings.OBJECT_ID])
 
         SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
@@ -205,11 +216,6 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             self.projectNum -= 1
             raise self.UpdateException('Could not update the Project name. ID:' + id)
 
-handler = TeamworkHandler
-httpd = SocketServer.TCPServer(('127.0.0.1', 8181), handler)
-print("Serving at port", 8181)
-# try:
-httpd.serve_forever()
-# except KeyboardInterrupt:
-# 	print('Shutting down server...')
-# 	httpd.shutdown()
+
+if __name__ == '__main__':
+    main()
