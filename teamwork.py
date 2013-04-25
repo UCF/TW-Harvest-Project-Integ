@@ -27,6 +27,7 @@ class Teamwork(object):
 
     PROJECTS_URL = '/projects'
     PROJECT = 'project'
+    PROJECTS = 'projects'
 
     COMPANIES_URL = '/companies'
     COMPANY = 'company'
@@ -44,6 +45,14 @@ class Teamwork(object):
         self.auth = HTTPBasicAuth(username, password)
         self.headers = {'Content-Type': 'application/json'}
 
+    def get_projects(self):
+        """Retrieves projects based on the ID
+
+        :return: The project
+        :rtype: dict
+        """
+        return self.get_request(self.base_url + Teamwork.PROJECTS_URL + Teamwork.REQ_TYPE)
+
     def get_project(self, id):
         """Retrieves project based on the ID
 
@@ -51,16 +60,7 @@ class Teamwork(object):
         :return: The project
         :rtype: dict
         """
-        self.get_request(self.base_url + Teamwork.PROJECTS_URL + '/' + id + Teamwork.REQ_TYPE)
-
-    def get_company(self, id):
-        """Retrieves the company based on the ID
-
-        :param id: Company ID
-        :return: The company
-        :rtype: dic
-        """
-        self.get_request(self.base_url + Teamwork.COMPANIES_URL + '/' + id + Teamwork.REQ_TYPE)
+        return self.get_request(self.base_url + Teamwork.PROJECTS_URL + '/' + id + Teamwork.REQ_TYPE)
 
     def update_project(self, project_name, id):
         """Updates the project name based on the ID
@@ -69,7 +69,16 @@ class Teamwork(object):
         :param id: Project ID
         """
         data = {Teamwork.PROJECT: {Teamwork.NAME: project_name}}
-        self.put_request(self.base_url + Teamwork.PROJECTS_URL + '/' + id + Teamwork.REQ_TYPE, data)
+        return self.put_request(self.base_url + Teamwork.PROJECTS_URL + '/' + id + Teamwork.REQ_TYPE, data)
+
+    def get_company(self, id):
+        """Retrieves the company based on the ID
+
+        :param id: Company ID
+        :return: The company
+        :rtype: dic
+        """
+        return self.get_request(self.base_url + Teamwork.COMPANIES_URL + '/' + id + Teamwork.REQ_TYPE)
 
     def get_request(self, url):
         """Performs a GET request with the given url
@@ -94,7 +103,7 @@ class Teamwork(object):
 
         :param url: URL to make the request against
         :param data: data that will be pass with the request
-        :return: Response location
+        :return: Project ID
         :rtype: str
         """
         req = requests.post(url=url,
@@ -107,15 +116,14 @@ class Teamwork(object):
                           "\nResponse header: " + str(req.headers))
             return None
 
-        # return req.headers[Harvest.LOCATION]
-        req.headers
+        return req.headers[Teamwork.ID]
 
     def put_request(self, url, data):
         """Performs a PUT request with the given url and data
 
         :param url: URL to make the request against
         :param data: data that will be pass with the request
-        :return: Response location
+        :return: headers
         :rtype: str
         """
         req = requests.put(url=url,
@@ -128,4 +136,4 @@ class Teamwork(object):
                           "\nResponse headers: " + str(req.headers))
             return None
 
-        return req.headers[Teamwork.LOCATION]
+        return req.headers

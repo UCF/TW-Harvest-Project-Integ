@@ -35,9 +35,9 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         :param server: HTTP Server
         """
         logging.debug('Initiating TeamworkHandler...')
-        self.projectNum = self.get_project_number()
         self.teamwork = Teamwork(settings.TEAMWORK_BASE_URL, settings.TEAMWORK_USER, settings.TEAMWORK_PASS)
         self.harvest = Harvest(settings.HARVEST_BASE_URL, settings.HARVEST_USER, settings.HARVEST_PASS)
+        self.project_num = self.get_project_number()
         SimpleHTTPServer.SimpleHTTPRequestHandler.__init__(self, request, client_address, server)
 
     def do_POST(self):
@@ -123,6 +123,7 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         :param project_name: Old project name
         :param company_abbr: The company/client name abbreviation
         """
+        logging.debug('Creating new project ' + project_name + ' for client ' + company_abbr)
         # Update Teamwork project
         new_project_name = self.add_project_prefix(project_name, company_abbr)
         self.teamwork.update_project(new_project_name, tw_project_id)
@@ -148,10 +149,10 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             project_date = datetime.datetime.now().strftime('%y%m')
 
         if project_number is None:
-            self.projectNum += 1
-            project_number = self.projectNum
+            self.project_num += 1
+            project_number = self.project_num
 
-        project_name = project_date + "-" + company_abbr + "-" + project_number + " " + project_name
+        project_name = project_date + "-" + company_abbr + "-" + str(project_number) + " " + project_name
         return project_name
 
     def get_tw_post_values(self, form):
@@ -186,10 +187,8 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         """
         projectNum = 0
 
-        print hasattr(self, 'teamwork')
-
         projects = self.teamwork.get_projects()
-        if projects is not None:
+        if projects:
             for project in projects[Teamwork.PROJECTS]:
                 name = project[Teamwork.NAME]
                 if re.match(TeamworkHandler.PROJ_NAME_PATTERN, name):
