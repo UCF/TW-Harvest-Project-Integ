@@ -7,6 +7,7 @@ import requests
 
 class Harvest(object):
 
+    ID = 'id'
     NAME = 'name'
     LOCATION = 'location'
 
@@ -63,7 +64,25 @@ class Harvest(object):
         """
         data = {Harvest.CLIENT: {Harvest.NAME: name}}
         location = self.post_request(self.base_url + Harvest.CLIENTS_URL, data)
-        return location.replace(Harvest.CLIENTS_URL + '/')
+
+        if location is None:
+            return location
+        return location.replace(Harvest.CLIENTS_URL + '/', '')
+
+    def update_client(self, id, name):
+        """Updates a client based on the client ID
+
+        :param id: Client ID
+        :param name: the new client's name
+        :return: Client ID
+        :rtype: str
+        """
+        data = {Harvest.CLIENT: {Harvest.NAME: name}}
+        location = self.put_request(self.base_url + Harvest.CLIENT_URL + '/' + id, data)
+
+        if location is None:
+            return location
+        return location.replace(Harvest.CLIENTS_URL + '/', '')
 
     def get_projects(self):
         """Retrieves all projects
@@ -82,6 +101,35 @@ class Harvest(object):
         """
         return self.get_request(self.base_url + Harvest.PROJECTS_URL + '/' + project_id)
 
+    def get_project_by_name(self, name):
+        """Retrieves project by name
+
+        :param name: Name of project
+        :return: Project
+        :rtype: dict
+        """
+        projects = self.get_projects()
+        for project in projects:
+            if project[Harvest.PROJECT][Harvest.NAME] == name:
+                return project
+        return None
+
+    def update_project(self, project_id, name, client_id):
+        """Updates a project using the project ID
+
+        :param project_id: Project ID
+        :param name: Name of project
+        :param client_id: ID of client to assign to project
+        :return: Project ID
+        :rtype: str
+        """
+        data = {Harvest.PROJECT: {Harvest.NAME: name, Harvest.CLIENT_ID: client_id}}
+        location = self.put_request(self.base_url + Harvest.PROJECTS_URL + '/' + project_id, data)
+
+        if location is None:
+            return location
+        return location.replace(Harvest.PROJECTS_URL + '/', '')
+
     def create_project(self, name, client_id):
         """Creates a project using the name and client ID
 
@@ -92,8 +140,10 @@ class Harvest(object):
         """
         data = {Harvest.PROJECT: {Harvest.NAME: name, Harvest.CLIENT_ID: client_id}}
         location = self.post_request(self.base_url + Harvest.PROJECTS_URL, data)
-        # return location.replace(Harvest.PROJECTS_URL + '/')
-        return location
+
+        if location is None:
+            return location
+        return location.replace(Harvest.PROJECTS_URL + '/', '')
 
     def user_assignment(self, project_id, user_id):
         """Assigns a user to a project
@@ -142,8 +192,7 @@ class Harvest(object):
                           "\nResponse header: " + str(req.headers))
             return None
 
-        # return req.headers[Harvest.LOCATION]
-        req.headers
+        return req.headers[Harvest.LOCATION]
 
     def put_request(self, url, data):
         """Performs a PUT request with the given url and data

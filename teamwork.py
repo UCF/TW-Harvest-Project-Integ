@@ -10,6 +10,8 @@ class Teamwork(object):
     # Webhook strings
     PROJECT_CREATED = 'PROJECT.CREATED'
     PROJECT_UPDATED = 'PROJECT.UPDATED'
+    COMPANY_CREATED = 'COMPANY.CREATED'
+    COMPANY_UPDATED = 'COMPANY.UPDATED'
 
     EVENT = 'event'
     OBJECT_ID = 'objectId'
@@ -29,6 +31,7 @@ class Teamwork(object):
     COMPANIES_URL = '/companies'
     COMPANY = 'company'
     PHONE = 'phone'
+    ADDRESS_ONE = 'address_one'
 
     def __init__(self, base_url, username, password):
         """Initializes the handler.
