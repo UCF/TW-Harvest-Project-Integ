@@ -1,37 +1,30 @@
+import cgi
+import datetime
+from harvest import Harvest
+import json
+import logging
+import re
+import settings
 import SimpleHTTPServer
 import SocketServer
-import cgi
-import json
-import requests
-import settings
-import datetime
-import re
+import sys
+from teamwork import Teamwork
 
 
 def main():
     handler = TeamworkHandler
     httpd = SocketServer.TCPServer(('127.0.0.1', 8181), handler)
     print("Serving at port", 8181)
-    # try:
-    httpd.serve_forever()
-    # except KeyboardInterrupt:
-    # 	print('Shutting down server...')
-    # 	httpd.shutdown()
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print('Shutting down server...')
+        httpd.shutdown()
 
 
 class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
-    class TeamworkException(Exception):
-        pass
-
-    class InsufficientPostDataException(TeamworkException):
-        pass
-
-    class UpdateException(TeamworkException):
-        pass
-
-    class GetException(TeamworkException):
-        pass
+    PROJ_NAME_PATTERN = "^[0-9]*-[A-Z]*-[0-9]* .*$"
 
     def __init__(self, request, client_address, server):
         """Initializes the handler.
@@ -40,182 +33,126 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         :param client_address: HTTP Client address
         :param server: HTTP Server
         """
-        self.projectNum = self.getProjectNumber()
+        self.projectNum = self.get_project_number()
+        self.teamwork = Teamwork(settings.TEAMWORK_BASE_URL, settings.TEAMWORK_USER, settings.TEAMWORK_PASS)
+        self.harvest = Harvest(settings.HARVEST_BASE_URL, settings.HARVEST_USER, settings.HARVEST_PASS)
         SimpleHTTPServer.SimpleHTTPRequestHandler.__init__(self, request, client_address, server)
 
     def do_POST(self):
         """Teamwork webhook API for POST
         """
-        form = cgi.FieldStorage(
-            fp=self.rfile,
-            headers=self.headers,
-            environ={'REQUEST_METHOD': 'POST',
-                     'CONTENT_TYPE': self.headers['Content-Type']})
+        form = cgi.FieldStorage(fp=self.rfile,
+                                headers=self.headers,
+                                environ={'REQUEST_METHOD': 'POST',
+                                         'CONTENT_TYPE': self.headers['Content-Type']})
 
-        postValues = self.getPostValues(form)
+        postValues = self.get_tw_post_values(form)
 
-        if postValues[settings.EVENT] == settings.PROJECT_CREATED or postValues[settings.EVENT] == \
-                settings.PROJECT_UPDATED:
-            self.setProjectCode(postValues[settings.OBJECT_ID])
+        if postValues[Teamwork.EVENT] == Teamwork.PROJECT_CREATED or postValues[Teamwork.EVENT] == \
+                Teamwork.PROJECT_UPDATED:
+            self.set_project_code(postValues[Teamwork.OBJECT_ID])
 
         SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
 
-    def setProjectCode(self, id):
+    def set_project_code(self, project_id):
         """Prepends the project code to the project name.
 
-        :param id: The ID of the project
+        :param project_id: The ID of the project
         """
         try:
-            projectData = self.getProject(id)
-            projectName = projectData[settings.PROJECT][settings.NAME]
+            project_data = self.harvest.get_project(project_id)
+            project_name = project_data[Teamwork.PROJECT][Teamwork.NAME]
 
-            companyData = self.getCompany(projectData[settings.PROJECT][settings.COMPANY][settings.ID])
-            companyAbbr = companyData[settings.COMPANY][settings.PHONE]
+            company_data = self.harvest.get_company(project_data[Teamwork.PROJECT][Teamwork.COMPANY][Teamwork.ID])
+            company_abbr = company_data[Teamwork.COMPANY][Teamwork.PHONE]
 
-            if not re.match(settings.PROJ_NAME_PATTERN, projectName):
-                projectName = self.addProjectPrefix(projectName, companyAbbr)
-                self.updateProject(projectName, id)
+            if not re.match(TeamworkHandler.PROJ_NAME_PATTERN, project_name):
+                project_name = self.add_project_prefix(project_name, company_abbr)
+                self.harvest.update_project(project_name, project_id)
             else:
                 # Update the project name if client has been updated
-                companyCode = re.sub("^[0-9]*-", "", projectName)
+                companyCode = re.sub("^[0-9]*-", "", project_name)
                 companyCode = re.sub("-[0-9]* .*$", "", companyCode)
-                if companyAbbr != companyCode:
-                    projectNumber = re.sub("^[0-9]*-[A-Z]*-", "", projectName)
+                if company_abbr != companyCode:
+                    projectNumber = re.sub("^[0-9]*-[A-Z]*-", "", project_name)
                     projectNumber = re.sub(" .*$", "", projectNumber)
 
-                    projectDate = re.sub("-[A-Z]*-[0-9]* .*$", "", projectName)
+                    projectDate = re.sub("-[A-Z]*-[0-9]* .*$", "", project_name)
 
-                    projectName = re.sub("^.* ", "", projectName)
+                    project_name = re.sub("^.* ", "", project_name)
 
-                    projectName = self.addProjectPrefix(projectName, companyAbbr, projectDate, projectNumber)
-                    self.updateProject(projectName, id)
+                    project_name = self.add_project_prefix(project_name, company_abbr, projectDate, projectNumber)
+                    self.harvest.update_project(project_name, project_id)
 
         except KeyError:
-            raise self.UpdateException('Could not retrieve data for Project. ID: ' + id)
+            logging.error('Could not retrieve data for Project. ID: ' + project_id)
 
-    def addProjectPrefix(self, projectName, companyAbbr, projectDate=None, projectNumber=None):
+    def add_project_prefix(self, project_name, company_abbr, project_date=None, project_number=None):
         """Adds the project prefix to the project name
 
-        :param projectName: Project name
-        :param companyAbbr: Company abbreviation
-        :param projectDate: Project creation date
-        :param projectNumber: Project number
+        :param project_name: Project name
+        :param company_abbr: Company abbreviation
+        :param project_date: Project creation date
+        :param project_number: Project number
         :return: New project name
         :rtype: str
         """
-        if projectDate is None:
-            projectDate = datetime.datetime.now().strftime('%y%m')
+        if project_date is None:
+            project_date = datetime.datetime.now().strftime('%y%m')
 
-        if projectNumber is None:
+        if project_number is None:
             self.projectNum += 1
-            projectNumber = self.projectNum
+            project_number = self.projectNum
 
-        projectName = projectDate + "-" + companyAbbr + "-" + projectNumber + " " + projectName
-        return projectName
+        project_name = project_date + "-" + company_abbr + "-" + project_number + " " + project_name
+        return project_name
 
-    def getPostValues(self, form):
+    def get_tw_post_values(self, form):
         """Retrieves the POST values
 
-        :author:
         :param form: The POST form
-        :return: Dictionary of the POST values
-        :rtype: Dictionary
+        :return: POST values
+        :rtype: dict
         """
         postValues = {}
         try:
-            if form[settings.EVENT].value and \
-                    form[settings.OBJECT_ID].value and \
-                    form[settings.ACCOUNT_ID].value and \
-                    form[settings.USER_ID].value:
-                postValues[settings.EVENT] = form[settings.EVENT].value
-                postValues[settings.OBJECT_ID] = form[settings.OBJECT_ID].value
-                postValues[settings.ACCOUNT_ID] = form[settings.ACCOUNT_ID].value
-                postValues[settings.USER_ID] = form[settings.USER_ID].value
+            if form[Teamwork.EVENT].value and \
+                    form[Teamwork.OBJECT_ID].value and \
+                    form[Teamwork.ACCOUNT_ID].value and \
+                    form[Teamwork.USER_ID].value:
+                postValues[Teamwork.EVENT] = form[Teamwork.EVENT].value
+                postValues[Teamwork.OBJECT_ID] = form[Teamwork.OBJECT_ID].value
+                postValues[Teamwork.ACCOUNT_ID] = form[Teamwork.ACCOUNT_ID].value
+                postValues[Teamwork.USER_ID] = form[Teamwork.USER_ID].value
             else:
-                raise self.InsufficientPostDataException('Missing post data.')
+                logging.error('Missing TW post data: ' + json.dumps(form))
         except KeyError:
-            raise self.InsufficientPostDataException('Missing post data.')
+            logging.error('Missing TW post data: ' + json.dumps(form))
 
         return postValues
 
-    def getProjectNumber(self):
+    def get_project_number(self):
         """Returns the last known project number
 
         :return: Last project number
         :rtype: int
-        :raise GetException: Failed to get project list
         """
         projectNum = 0
 
-        req = requests.get(settings.TEAMWORK_BASE_URL + settings.PROJECTS + settings.REQ_TYPE,
-                           auth=(settings.TEAMWORK_USER, settings.TEAMWORK_PASS))
-
-        if req.status_code == settings.SUCCESS_CODE:
-            projects = req.json()
-            for project in projects[settings.PROJECTS]:
-                name = project[settings.NAME]
-                if re.match(settings.PROJ_NAME_PATTERN, name):
+        projects = self.harvest.get_projects()
+        if projects is not None:
+            for project in projects[Harvest.PROJECTS]:
+                name = project[Harvest.NAME]
+                if re.match(TeamworkHandler.PROJ_NAME_PATTERN, name):
                     name = re.sub("^[0-9]*-[A-Z]*-", "", name)
-                    tempProjectStr = re.search("^[0-9]", name).group(0)
-                    try:
-                        if projectNum < int(tempProjectStr):
-                            projectNum = int(tempProjectStr)
-                    except ValueError:
-                        pass
+                    tmp_project_str = re.search("^[0-9]", name).group(0)
+                    if projectNum < int(tmp_project_str):
+                        projectNum = int(tmp_project_str)
         else:
-            raise self.GetException('Could not retrieve initial project information.')
+            logging.critical('Could not retrieve project to determine starting project number.')
+            sys.exit(1)
 
         return projectNum
-
-    def getProject(self, id):
-        """Retrieves a JSON representation of the project based on the ID
-
-        :param id: Project ID
-        :return: JSON of the project data
-        :rtype: JSON
-        :raise GetException: If the project could not be retrieved
-        """
-        req = requests.get(settings.TEAMWORK_BASE_URL + settings.URL_PROJECTS + id + settings.REQ_TYPE,
-                           auth=(settings.TEAMWORK_USER, settings.TEAMWORK_PASS))
-
-        if req.status_code != settings.SUCCESS_CODE:
-            raise self.GetException('Could not retrieve data for Project ID:' + id)
-
-        return req.json()
-
-    def getCompany(self, id):
-        """Retrieves a JSON representation of the company based on the ID
-
-        :param id: Company ID
-        :return: JSON of the company data
-        :rtype: JSON
-        :raise: If the company could not be retrieved
-        """
-        req = requests.get(settings.TEAMWORK_BASE_URL + settings.URL_COMPANY + id + settings.REQ_TYPE,
-                           auth=(settings.TEAMWORK_USER, settings.TEAMWORK_PASS))
-
-        if req.status_code != settings.SUCCESS_CODE:
-            raise self.GetException('Could not retrieve data for Company ID:' + id)
-        return req.json()
-
-    def updateProject(self, projectName, id):
-        """Sends a project update request to Teamwork
-
-        :param projectName: New project name
-        :param id: Project ID
-        :raise UpdateException: If the project name could not be updated
-        """
-        payload = {settings.PROJECT: {settings.NAME: projectName}}
-        headers = {settings.POST_CONTENT_HEADER: settings.POST_CONTENT_TYPE}
-        req = requests.put(settings.TEAMWORK_BASE_URL + settings.URL_PROJECTS + id + settings.REQ_TYPE,
-                           auth=(settings.TEAMWORK_USER, settings.TEAMWORK_PASS),
-                           data=json.dumps(payload),
-                           headers=headers)
-
-        if req.status_code != settings.SUCCESS_CODE:
-            self.projectNum -= 1
-            raise self.UpdateException('Could not update the Project name. ID:' + id)
-
 
 if __name__ == '__main__':
     main()
