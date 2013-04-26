@@ -34,6 +34,10 @@ class Teamwork(object):
     PHONE = 'phone'
     ADDRESS_ONE = 'address_one'
 
+    PEOPLE = 'people'
+    PERSON = 'person'
+    EMAIL_DASH_ADDRESS = 'email-address'
+
     def __init__(self, base_url, username, password):
         """Initializes the handler.
 
@@ -76,9 +80,19 @@ class Teamwork(object):
 
         :param id: Company ID
         :return: The company
-        :rtype: dic
+        :rtype: dict
         """
         return self.get_request(self.base_url + Teamwork.COMPANIES_URL + '/' + id + Teamwork.REQ_TYPE)
+
+    def get_project_people(self, project_id):
+        """Get people assigned to a project
+
+        :param project_id: Project ID
+        :return: People assigned to the project
+        :rtype: dict
+        """
+        return self.get_request(self.base_url + Teamwork.PROJECTS_URL + '/' + project_id +
+                                '/' + Teamwork.PEOPLE + Teamwork.REQ_TYPE)
 
     def get_request(self, url):
         """Performs a GET request with the given url
@@ -93,7 +107,7 @@ class Teamwork(object):
 
         if req.status_code != httplib.OK:
             logging.error('Could not make GET request using url: ' + url +
-                          '\nResponse headers: ' + str(req.headers))
+                          ' Response headers: ' + str(req.headers))
             return None
 
         return req.json()
@@ -113,7 +127,7 @@ class Teamwork(object):
 
         if req.status_code != httplib.CREATED:
             logging.error("Could not make POST request using url: " + url + " with data: " + json.dumps(data) +
-                          "\nResponse header: " + str(req.headers))
+                          " Response header: " + str(req.headers))
             return None
 
         return req.headers[Teamwork.ID]
@@ -133,7 +147,7 @@ class Teamwork(object):
 
         if req.status_code != httplib.OK:
             logging.error("Could not make PUT request using url: " + url + " with data: " + json.dumps(data) +
-                          "\nResponse headers: " + str(req.headers))
+                          " Response headers: " + str(req.headers))
             return None
 
         return req.headers

@@ -21,6 +21,12 @@ class Harvest(object):
     CLIENT_ID = 'client_id'
 
     USER_ASSIGNMENTS_URL = '/user_assignments'
+    USER_ASSIGNMENT = 'user_assignment'
+
+    PEOPLE_URL = '/people'
+    USER = 'user'
+    USER_ID = 'user_id'
+    EMAIL = 'email'
 
     def __init__(self, base_url, username, password):
         """Initializes the handler.
@@ -124,7 +130,7 @@ class Harvest(object):
         :rtype: str
         """
         data = {Harvest.PROJECT: {Harvest.NAME: name, Harvest.CLIENT_ID: client_id}}
-        location = self.put_request(self.base_url + Harvest.PROJECTS_URL + '/' + project_id, data)
+        location = self.put_request(self.base_url + Harvest.PROJECTS_URL + '/' + str(project_id), data)
 
         if location is None:
             return location
@@ -145,7 +151,17 @@ class Harvest(object):
             return location
         return location.replace(Harvest.PROJECTS_URL + '/', '')
 
-    def user_assignment(self, project_id, user_id):
+    def get_project_people(self, project_id):
+        """Get people assigned to a project
+
+        :param project_id: Project ID
+        :return: People assigned to the project
+        :rtype: dict
+        """
+        return self.get_request(self.base_url + Harvest.PROJECTS_URL + '/' + str(project_id) +
+                                Harvest.USER_ASSIGNMENTS_URL)
+
+    def add_user_assignment(self, project_id, user_id):
         """Assigns a user to a project
 
         :param project_id: Project ID
@@ -155,6 +171,26 @@ class Harvest(object):
         """
         return self.post_request(self.base_url + Harvest.PROJECTS_URL + '/' + project_id +
                                  Harvest.USER_ASSIGNMENTS_URL + '/' + user_id)
+
+    def remove_user_assignment(self, project_id, user_id):
+        """Remove a user from the project
+
+        :param project_id: Project ID
+        :param user_id: User ID to remove from the project
+        :return: Assignment location
+        :rtype: str
+        """
+        return self.delete_request(self.base_url + Harvest.PROJECTS_URL + '/' + project_id +
+                                   Harvest.USER_ASSIGNMENTS_URL + '/' + user_id)
+
+    def get_person(self, id):
+        """Retrieve a person
+
+        :param id: Person ID
+        :return: Person
+        :rtype: dict
+        """
+        return self.get_request(self.base_url + Harvest.PEOPLE_URL + '/' + str(id))
 
     def get_request(self, url):
         """Performs a GET request with the given url
@@ -169,7 +205,7 @@ class Harvest(object):
 
         if req.status_code != httplib.OK:
             logging.error('Could not make GET request using url: ' + url +
-                          '\nResponse headers: ' + str(req.headers))
+                          ' Response headers: ' + str(req.headers))
             return None
 
         return req.json()
@@ -189,7 +225,7 @@ class Harvest(object):
 
         if req.status_code != httplib.CREATED:
             logging.error("Could not make POST request using url: " + url + " with data: " + json.dumps(data) +
-                          "\nResponse header: " + str(req.headers))
+                          " Response header: " + str(req.headers))
             return None
 
         return req.headers[Harvest.LOCATION]
@@ -209,7 +245,7 @@ class Harvest(object):
 
         if req.status_code != httplib.OK:
             logging.error("Could not make PUT request using url: " + url + " with data: " + json.dumps(data) +
-                          "\nResponse headers: " + str(req.headers))
+                          " Response headers: " + str(req.headers))
             return None
 
         return req.headers[Harvest.LOCATION]

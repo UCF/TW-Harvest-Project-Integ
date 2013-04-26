@@ -69,27 +69,35 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             tw_project = self.teamwork.get_project(tw_project_id)
             project_name = tw_project[Teamwork.PROJECT][Teamwork.NAME]
 
-            tw_company = self.teamwork.get_company(tw_project[Teamwork.PROJECT][Teamwork.COMPANY][Teamwork.ID])
-            new_company_abbr = tw_company[Teamwork.COMPANY][Teamwork.PHONE]
-
             if not re.match(TeamworkHandler.PROJ_NAME_PATTERN, project_name):
-                self.create_project(tw_project_id, project_name, new_company_abbr)
+                self.create_project(tw_project)
             else:
-                company_abbr = re.sub("^[0-9]*-", "", project_name)
-                company_abbr = re.sub("-[0-9]* .*$", "", company_abbr)
-                if new_company_abbr != company_abbr:
-                    self.update_project(tw_project_id, project_name, new_company_abbr)
-                else:
-                    logging.debug('No update to project name is needed ' + project_name)
+                self.update_project(tw_project)
         except KeyError:
             logging.error('Could not retrieve data for Project. ID: ' + tw_project_id)
 
-    def update_project(self, tw_project_id, project_name, company_abbr):
-        """Updates the project name in TeamworkPM and Harvest
+    def update_project(self, tw_project):
+        """Updates the project in TeamworkPM and Harvest
 
-        :param tw_project_id: Teamwork project ID
-        :param project_name: Old project name
-        :param company_abbr: New company/client name abbreviation
+        :param tw_project: Teamwork project
+        """
+        project_name = tw_project[Teamwork.PROJECT][Teamwork.NAME]
+        tw_company = self.teamwork.get_company(tw_project[Teamwork.PROJECT][Teamwork.COMPANY][Teamwork.ID])
+        new_company_abbr = tw_company[Teamwork.COMPANY][Teamwork.PHONE]
+        company_abbr = re.sub("^[0-9]*-", "", project_name)
+        company_abbr = re.sub("-[0-9]* .*$", "", company_abbr)
+        new_project_name = project_name
+        if new_company_abbr != company_abbr:
+            new_project_name = self.update_project_name(project_name, company_abbr, tw_project[Teamwork.PROJECT][Teamwork.ID])
+
+        self.update_project_users(new_project_name, tw_project[Teamwork.PROJECT][Teamwork.ID])
+
+    def update_project_name(self, project_name, company_abbr, tw_project_id):
+        """Update the project name in TeamworkPM and Harvest
+
+        :param project_name: Project name
+        :param company_abbr: Company abbreviation
+        :param tw_project_id: TeamworkPM project ID
         """
         project_number = re.sub("^[0-9]*-[A-Z]*-", "", project_name)
         project_number = re.sub(" .*$", "", project_number)
@@ -105,10 +113,12 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
         # Update Harvest project
         h_project = self.harvest.get_project_by_name(project_name)
-        if h_project is not None:
+        if h_project:
             h_client = self.harvest.get_client_by_name(company_abbr)
             if h_client:
-                self.harvest.update_project(new_project_name, h_client[Harvest.CLIENT][Harvest.ID])
+                self.harvest.update_project(h_project[Harvest.PROJECT][Harvest.ID],
+                                            new_project_name,
+                                            h_client[Harvest.CLIENT][Harvest.ID])
             else:
                 logging.error('Could not update Harvest project because Client ' + company_abbr +
                               ' does not exist.')
@@ -116,14 +126,88 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             logging.error('Could not update Harvest project because matching Project name ' + project_name +
                           ' does not exist')
 
-    def create_project(self, tw_project_id, project_name, company_abbr):
+        return new_project_name
+
+    def update_project_users(self, project_name, tw_project_id):
+        """Update the project users
+
+        :param project_name: Project name
+        :param tw_project_id: TeamworkPM project ID
+        """
+        tw_emails = self.get_tw_project_emails(tw_project_id)
+        logging.debug('Harvest assigned people: ' + str(tw_emails))
+
+        h_project = self.harvest.get_project_by_name(project_name)
+        h_emails = self.get_h_project_emails(h_project[Harvest.PROJECT][Harvest.ID])
+        logging.debug('Harvest assigned people: ' + str(h_emails))
+
+        add_people = []
+        remove_people = []
+
+        if not tw_emails:
+            remove_people.extend(h_emails.keys())
+        else:
+            for key, value in h_emails.iteritems():
+                if value in tw_emails.values():
+
+
+
+        if tw_people and h_project:
+            for h_assigned_person in h_assigned_people:
+                match = False
+                h_person = self.harvest.get_person(h_assigned_person[Harvest.USER_ASSIGNMENT][Harvest.USER_ID])
+                for tw_person in tw_people[Teamwork.PEOPLE]:
+                    if tw_person[Teamwork.PERSON][Teamwork.EMAIL_DASH_ADDRESS] == \
+                            h_person[Harvest.USER][Harvest.EMAIL]:
+                        match = True
+                        add_people.append(h_person[Harvest.USER][Harvest.ID])
+
+                if not match:
+                    remove_people.append(h_person[Harvest.USER][Harvest.ID])
+
+        logging.debug('Adding people to project "' + project_name + '" ' + str(add_people))
+        logging.debug('Removing people from project "' + project_name + '" ' + str(remove_people))
+
+    def get_tw_project_emails(self, project_id):
+        """Get a list of assigned emails to the given project
+
+        :param project_id: Project ID
+        :return: Assigned email list
+        :rtype: list
+        """
+        people = self.teamwork.get_project_people(project_id)
+        emails = {}
+        for person in people[Teamwork.PEOPLE]:
+            emails[person[Teamwork.PERSON][Teamwork.ID]] = person[Teamwork.PERSON][Teamwork.EMAIL_DASH_ADDRESS]
+
+        return emails
+
+    def get_h_project_emails(self, project_id):
+        """Get a list of assigned emails to the given project
+
+        :param project_id: Project ID
+        :return: Assigned email list
+        :rtype: list
+        """
+        people = self.harvest.get_project_people(project_id)
+        emails = {}
+        for person in people:
+            emails[person[Harvest.USER_ASSIGNMENT][Harvest.USER_ID]] = person[Harvest.USER_ASSIGNMENT][Harvest.EMAIL]
+
+        return emails
+
+
+    def create_project(self, tw_project):
         """Create the project with the appropriate name
 
-        :param tw_project_id: Teamwork project ID
-        :param project_name: Old project name
-        :param company_abbr: The company/client name abbreviation
+        :param tw_project: Teamwork project
         """
+        tw_project_id = tw_project[Teamwork.PROJECT][Teamwork.ID]
+        project_name = tw_project[Teamwork.PROJECT][Teamwork.NAME]
+        tw_company = self.teamwork.get_company(tw_project[Teamwork.PROJECT][Teamwork.COMPANY][Teamwork.ID])
+        company_abbr = tw_company[Teamwork.COMPANY][Teamwork.PHONE]
         logging.debug('Creating new project ' + project_name + ' for client ' + company_abbr)
+
         # Update Teamwork project
         new_project_name = self.add_project_prefix(project_name, company_abbr)
         self.teamwork.update_project(new_project_name, tw_project_id)
@@ -131,7 +215,7 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         # Create Harvest project
         h_client = self.harvest.get_client_by_name(company_abbr)
         if h_client:
-            self.harvest.create_project(project_name, h_client[Harvest.CLIENT][Harvest.ID])
+            self.harvest.create_project(new_project_name, h_client[Harvest.CLIENT][Harvest.ID])
         else:
             logging.error('Could not Create Harvest project because Client ' + company_abbr + ' does not exist.')
 
