@@ -25,6 +25,7 @@ class Harvest(object):
 
     PEOPLE_URL = '/people'
     USER = 'user'
+    USERS = 'users'
     USER_ID = 'user_id'
     EMAIL = 'email'
 
@@ -169,8 +170,9 @@ class Harvest(object):
         :return: Assignment location
         :rtype: str
         """
-        return self.post_request(self.base_url + Harvest.PROJECTS_URL + '/' + project_id +
-                                 Harvest.USER_ASSIGNMENTS_URL + '/' + user_id)
+        data = {Harvest.USER: {Harvest.ID: user_id}}
+        return self.post_request(self.base_url + Harvest.PROJECTS_URL + '/' + str(project_id) +
+                                 Harvest.USER_ASSIGNMENTS_URL, data)
 
     def remove_user_assignment(self, project_id, user_id):
         """Remove a user from the project
@@ -180,8 +182,16 @@ class Harvest(object):
         :return: Assignment location
         :rtype: str
         """
-        return self.delete_request(self.base_url + Harvest.PROJECTS_URL + '/' + project_id +
-                                   Harvest.USER_ASSIGNMENTS_URL + '/' + user_id)
+        return self.delete_request(self.base_url + Harvest.PROJECTS_URL + '/' + str(project_id) +
+                                   Harvest.USER_ASSIGNMENTS_URL + '/' + str(user_id))
+
+    def get_people(self):
+        """Retrieve all people
+
+        :return: People
+        :rtype: dict
+        """
+        return self.get_request(self.base_url + Harvest.PEOPLE_URL)
 
     def get_person(self, id):
         """Retrieve a person
@@ -191,6 +201,20 @@ class Harvest(object):
         :rtype: dict
         """
         return self.get_request(self.base_url + Harvest.PEOPLE_URL + '/' + str(id))
+
+    def get_person_by_email(self, email):
+        """Retrieve a person by their email
+
+        :param email: Email used to find person
+        :return: Person
+        :rtype: dict
+        """
+        people = self.get_people()
+        for person in people:
+            if person[Harvest.USER][Harvest.EMAIL] == email:
+                return person
+
+        return None
 
     def get_request(self, url):
         """Performs a GET request with the given url
@@ -204,7 +228,7 @@ class Harvest(object):
                            headers=self.headers)
 
         if req.status_code != httplib.OK:
-            logging.error('Could not make GET request using url: ' + url +
+            logging.error('Could not make GET request using url ' + url +
                           ' Response headers: ' + str(req.headers))
             return None
 
@@ -224,8 +248,8 @@ class Harvest(object):
                             headers=self.headers)
 
         if req.status_code != httplib.CREATED:
-            logging.error("Could not make POST request using url: " + url + " with data: " + json.dumps(data) +
-                          " Response header: " + str(req.headers))
+            logging.error('Could not make POST request using url ' + url + ' with data ' + json.dumps(data) +
+                          ' Response header: ' + str(req.headers))
             return None
 
         return req.headers[Harvest.LOCATION]
@@ -244,8 +268,26 @@ class Harvest(object):
                            headers=self.headers)
 
         if req.status_code != httplib.OK:
-            logging.error("Could not make PUT request using url: " + url + " with data: " + json.dumps(data) +
-                          " Response headers: " + str(req.headers))
+            logging.error('Could not make PUT request using url ' + url + ' with data ' + json.dumps(data) +
+                          ' Response headers: ' + str(req.headers))
             return None
 
         return req.headers[Harvest.LOCATION]
+
+    def delete_request(self, url):
+        """Performs a DELETE request with the given url and data
+
+        :param url: URL to make the request against
+        :return: Response
+        :rtype: str
+        """
+        req = requests.delete(url=url,
+                              auth=self.auth,
+                              headers=self.headers)
+
+        if req.status_code != httplib.OK:
+            logging.error('Could not make DELETE request using url ' + url +
+                          ' with Response header: ' + str(req.headers))
+            return None
+
+        return req.headers
