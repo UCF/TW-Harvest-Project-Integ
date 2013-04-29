@@ -147,23 +147,14 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         if not tw_emails:
             remove_people.extend(h_emails.keys())
         else:
-            for key, value in h_emails.iteritems():
-                if value in tw_emails.values():
+            for h_id, h_email in h_emails.iteritems():
+                if h_email not in tw_emails.values():
+                    remove_people.append(h_id)
 
-
-
-        if tw_people and h_project:
-            for h_assigned_person in h_assigned_people:
-                match = False
-                h_person = self.harvest.get_person(h_assigned_person[Harvest.USER_ASSIGNMENT][Harvest.USER_ID])
-                for tw_person in tw_people[Teamwork.PEOPLE]:
-                    if tw_person[Teamwork.PERSON][Teamwork.EMAIL_DASH_ADDRESS] == \
-                            h_person[Harvest.USER][Harvest.EMAIL]:
-                        match = True
-                        add_people.append(h_person[Harvest.USER][Harvest.ID])
-
-                if not match:
-                    remove_people.append(h_person[Harvest.USER][Harvest.ID])
+            for tw_email in tw_emails.values():
+                for h_id, h_email in h_emails.iteritems():
+                    if tw_email == h_email:
+                        add_people.append(h_id)
 
         logging.debug('Adding people to project "' + project_name + '" ' + str(add_people))
         logging.debug('Removing people from project "' + project_name + '" ' + str(remove_people))
