@@ -7,3 +7,6 @@
 
 # Settings
 settings_local.py
+
+# Logging
+*.log
