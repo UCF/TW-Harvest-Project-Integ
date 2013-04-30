@@ -1,3 +1,4 @@
+import datetime
 import httplib
 import json
 from requests.auth import HTTPBasicAuth
@@ -28,6 +29,10 @@ class Harvest(object):
     USERS = 'users'
     USER_ID = 'user_id'
     EMAIL = 'email'
+
+    ENTRIES_URL = '/entries'
+    DAY_ENTRY = 'day_entry'
+    HOURS = 'hours'
 
     def __init__(self, base_url, username, password):
         """Initializes the handler.
@@ -120,6 +125,16 @@ class Harvest(object):
             if project[Harvest.PROJECT][Harvest.NAME] == name:
                 return project
         return None
+
+    def get_todays_updated_projects(self):
+        """Retrieves projects that have been updated today.
+
+        :return: Projects
+        :rtype: dict
+        """
+        now = datetime.datetime.now()
+        return self.get_request(self.base_url + Harvest.PROJECTS_URL + '?updated_since=' +
+                                now.strftime("%Y-%m-%d+00:01"))
 
     def update_project(self, project_id, name, client_id):
         """Updates a project using the project ID
@@ -215,6 +230,18 @@ class Harvest(object):
                 return person
 
         return None
+
+    def get_todays_proj_time_entries(self, project_id):
+        """Retrieves all of today's time entries for a project.
+
+        :param project_id: Project ID
+        :return: Time entries
+        :rtype: dict
+        """
+        now = datetime.datetime.now()
+        return self.get_request(self.base_url + Harvest.PROJECTS_URL + '/' + str(project_id) + Harvest.ENTRIES_URL +
+                                '?from=' + now.strftime("%Y%m%d") + '&' +
+                                'to=' + now.strftime("%Y%m%d"))
 
     def get_request(self, url):
         """Performs a GET request with the given url
