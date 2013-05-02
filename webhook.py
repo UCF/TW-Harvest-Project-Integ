@@ -43,7 +43,6 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         self.teamwork = Teamwork(settings.TEAMWORK_BASE_URL, settings.TEAMWORK_USER, settings.TEAMWORK_PASS)
         self.harvest = Harvest(settings.HARVEST_BASE_URL, settings.HARVEST_USER, settings.HARVEST_PASS)
         self.project_num = self.get_project_number()
-        logging.info('Starting project number ' + str(self.project_num))
         SimpleHTTPServer.SimpleHTTPRequestHandler.__init__(self, request, client_address, server)
 
     def do_POST(self):
@@ -302,7 +301,7 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         :return: Last project number
         :rtype: int
         """
-        projectNum = 0
+        project_num = 0
 
         projects = self.teamwork.get_projects()
         if projects:
@@ -310,14 +309,15 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                 name = project[Teamwork.NAME]
                 if re.match(TeamworkHandler.PROJ_NAME_PATTERN, name):
                     name = re.sub("^[0-9]*-[A-Z]*-", "", name)
-                    tmp_project_str = re.search("^[0-9]", name).group(0)
-                    if projectNum < int(tmp_project_str):
-                        projectNum = int(tmp_project_str)
+                    tmp_project_str = re.search("^[0-9]*", name).group(0)
+                    print tmp_project_str
+                    if project_num < int(tmp_project_str):
+                        project_num = int(tmp_project_str)
         else:
             logging.critical('Could not retrieve project to determine starting project number.')
             sys.exit(1)
-
-        return projectNum
+        logging.debug('Most recent project number: ' + str(project_num))
+        return project_num
 
     def create_company(self, company_id):
         """Create a company in Harvest
