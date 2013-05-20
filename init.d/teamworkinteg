@@ -1,0 +1,30 @@
+#! /bin/bash
+# /etc/init.d/teamworkinteg
+
+# Activate the python virtual environment
+    . /home/www/teamworkinteg/bin/activate
+
+case "$1" in
+  start)
+    echo "Starting Teamwork Integration Service"
+    # Start the daemon 
+    python /home/www/teamworkinteg/src/webhook.py start
+    ;;
+  stop)
+    echo "Stopping Teamwork Integration Service"
+    # Stop the daemon
+    python /home/www/teamworkinteg/src/webhook.py stop
+    ;;
+  restart)
+    echo "Restarting Teamwork Integration Service"
+    # Restart the daemon
+    python /home/www/teamworkinteg/src/webhook.py restart
+    ;;
+  *)
+    # Refuse to do other stuff
+    echo "Usage: /etc/init.d/teamworkinteg {start|stop|restart}"
+    exit 1
+    ;;
+esac
+
+exit 0

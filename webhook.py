@@ -1,4 +1,5 @@
 import cgi
+import daemon
 import datetime
 from harvest import Harvest
 import json
@@ -10,22 +11,6 @@ import SimpleHTTPServer
 import SocketServer
 import sys
 from teamwork import Teamwork
-
-
-def main():
-    logger = logging.getLogger()
-    logger.setLevel(settings.LOG_LVL)
-    log_handler = logging.handlers.TimedRotatingFileHandler('logfile.log', when='D', interval=1, backupCount=3)
-    logger.addHandler(log_handler)
-
-    handler = TeamworkHandler
-    httpd = SocketServer.TCPServer(('127.0.0.1', 8181), handler)
-    logging.debug('Serving at port 8181')
-    # try:
-    httpd.serve_forever()
-    # except KeyboardInterrupt:
-    #     print('Shutting down server...')
-    #     httpd.shutdown()
 
 
 class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
@@ -351,5 +336,17 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             logging.warning('Company already exists in Harvest or the abbreviation (addr one) is empty ("' +
                             str(company_abbr) + '") for company ' + tw_company[Teamwork.COMPANY][Teamwork.NAME])
 
+
 if __name__ == '__main__':
-    main()
+    logger = logging.getLogger()
+    logger.setLevel(settings.LOG_LVL)
+    log_handler = logging.handlers.TimedRotatingFileHandler(settings.LOG_LOCATION, when='D', interval=1, backupCount=3)
+    logger.addHandler(log_handler)
+
+    daemon_context = daemon.DaemonContext(files_preserve=[log_handler.stream])
+
+    with daemon_context:
+        handler = TeamworkHandler
+        httpd = SocketServer.TCPServer(('127.0.0.1', 8181), handler)
+        logging.debug('Serving at port 8181')
+        httpd.serve_forever()
