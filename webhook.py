@@ -1,44 +1,40 @@
-import cgi
-import daemon
 import datetime
+from flask import Flask
 from harvest import Harvest
-import json
-import logging
 import logging.handlers
 import re
+from flask import request
 import settings
-import SimpleHTTPServer
-import SocketServer
 import sys
 from teamwork import Teamwork
 
+app = Flask(__name__)
 
-class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
+
+@app.route("/", methods=['POST'])
+def post():
+    app.logger.debug('Retrieved webhook')
+
+    teamwork_handler = TeamworkHandler()
+    teamwork_handler.process_request(request)
+    return "Thankyou!"
+
+
+class TeamworkHandler(object):
 
     PROJ_NAME_PATTERN = "^[0-9]*-[A-Z]*-[0-9]* .*$"
 
-    def __init__(self, request, client_address, server):
+    def __init__(self):
         """Initializes the handler.
-
-        :param request: HTTP Request
-        :param client_address: HTTP Client address
-        :param server: HTTP Server
         """
-        logging.debug('Initiating TeamworkHandler...')
+        app.logger.debug('Initiating TeamworkHandler...')
         self.teamwork = Teamwork(settings.TEAMWORK_BASE_URL, settings.TEAMWORK_USER, settings.TEAMWORK_PASS)
         self.harvest = Harvest(settings.HARVEST_BASE_URL, settings.HARVEST_USER, settings.HARVEST_PASS)
-        SimpleHTTPServer.SimpleHTTPRequestHandler.__init__(self, request, client_address, server)
 
-    def do_POST(self):
-        """Teamwork webhook API for POST
+    def process_request(self, request):
+        """Process Teamwork POST
         """
-        logging.debug('Retrieved webhook')
-        form = cgi.FieldStorage(fp=self.rfile,
-                                headers=self.headers,
-                                environ={'REQUEST_METHOD': 'POST',
-                                         'CONTENT_TYPE': self.headers['Content-Type']})
-
-        post_values = self.get_tw_post_values(form)
+        post_values = request.form
         event = post_values[Teamwork.EVENT]
         if event == Teamwork.PROJECT_CREATED or event == Teamwork.PROJECT_UPDATED:
             self.set_project_code(post_values[Teamwork.OBJECT_ID])
@@ -46,8 +42,6 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             self.create_company(post_values[Teamwork.OBJECT_ID])
         elif event == Teamwork.COMPANY_UPDATED:
             self.update_company(post_values[Teamwork.OBJECT_ID])
-
-        SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
 
     def set_project_code(self, tw_project_id):
         """Prepends the project code to the project name.
@@ -59,13 +53,13 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             project_name = tw_project[Teamwork.PROJECT][Teamwork.NAME]
 
             if not re.match(TeamworkHandler.PROJ_NAME_PATTERN, project_name):
-                logging.debug('Webhook project create')
+                app.logger.debug('Webhook project create')
                 self.create_project(tw_project)
             else:
-                logging.debug('Webhook project update')
+                app.logger.debug('Webhook project update')
                 self.update_project(tw_project)
         except KeyError:
-            logging.exception('Could no update project with TeamworkPM ID of ' + tw_project_id)
+            app.logger.exception('Could no update project with TeamworkPM ID of ' + tw_project_id)
 
     def update_project(self, tw_project):
         """Updates the project in TeamworkPM and Harvest
@@ -82,7 +76,7 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             new_project_name = self.update_project_name(project_name, new_company_abbr,
                                                         tw_project[Teamwork.PROJECT][Teamwork.ID])
         else:
-            logging.debug('Project name does not need to be updated ' + project_name)
+            app.logger.debug('Project name does not need to be updated ' + project_name)
 
         self.update_project_users(new_project_name, tw_project[Teamwork.PROJECT][Teamwork.ID])
 
@@ -101,7 +95,7 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         postfix_project_name = re.sub("^[0-9]*-[A-Z]*-[0-9]* ", "", project_name)
 
         new_project_name = self.add_project_prefix(postfix_project_name, company_abbr, project_date, project_number)
-        logging.debug('Updating project name ' + new_project_name + ' for client ' + company_abbr)
+        app.logger.debug('Updating project name ' + new_project_name + ' for client ' + company_abbr)
 
         # Update Teamwork project
         self.teamwork.update_project(new_project_name, tw_project_id)
@@ -115,10 +109,10 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                                             new_project_name,
                                             h_client[Harvest.CLIENT][Harvest.ID])
             else:
-                logging.error('Could not update Harvest project because Client ' + company_abbr +
+                app.logger.error('Could not update Harvest project because Client ' + company_abbr +
                               ' does not exist.')
         else:
-            logging.error('Could not update Harvest project because matching Project name ' + project_name +
+            app.logger.error('Could not update Harvest project because matching Project name ' + project_name +
                           ' does not exist')
 
         return new_project_name
@@ -130,12 +124,12 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         :param tw_project_id: TeamworkPM project ID
         """
         tw_emails = self.get_tw_project_emails(tw_project_id)
-        logging.debug('Teamwork assigned people: ' + str(tw_emails))
+        app.logger.debug('Teamwork assigned people: ' + str(tw_emails))
 
         h_project = self.harvest.get_project_by_name(project_name)
         h_project_id = h_project[Harvest.PROJECT][Harvest.ID]
         h_emails = self.get_h_project_emails(h_project_id)
-        logging.debug('Harvest assigned people: ' + str(h_emails))
+        app.logger.debug('Harvest assigned people: ' + str(h_emails))
 
         add_people = []
         remove_people = []
@@ -157,12 +151,12 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                     if h_person:
                         add_people.append(h_person[Harvest.USER][Harvest.ID])
                     else:
-                        logging.warning('No user with this email "' + tw_email + '" exists in Harvest.')
+                        app.logger.warning('No user with this email "' + tw_email + '" exists in Harvest.')
 
-        logging.debug('Adding people to project "' + project_name + '" ' + str(add_people))
+        app.logger.debug('Adding people to project "' + project_name + '" ' + str(add_people))
         for person_id in add_people:
             self.harvest.add_user_assignment(h_project_id, person_id)
-        logging.debug('Removing people from project "' + project_name + '" ' + str(remove_people))
+        app.logger.debug('Removing people from project "' + project_name + '" ' + str(remove_people))
         for person_id in remove_people:
             self.harvest.remove_user_assignment(h_project_id, person_id)
 
@@ -222,7 +216,7 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         project_name = tw_project[Teamwork.PROJECT][Teamwork.NAME]
         tw_company = self.teamwork.get_company(tw_project[Teamwork.PROJECT][Teamwork.COMPANY][Teamwork.ID])
         company_abbr = tw_company[Teamwork.COMPANY][Teamwork.ADDRESS_ONE]
-        logging.debug('Creating new project ' + project_name + ' for client ' + company_abbr)
+        app.logger.debug('Creating new project ' + project_name + ' for client ' + company_abbr)
 
         # Update Teamwork project
         new_project_name = self.add_project_prefix(project_name, company_abbr)
@@ -233,7 +227,7 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         if h_client:
             self.harvest.create_project(new_project_name, h_client[Harvest.CLIENT][Harvest.ID])
         else:
-            logging.error('Could not Create Harvest project because Client ' + company_abbr + ' does not exist.')
+            app.logger.error('Could not Create Harvest project because Client ' + company_abbr + ' does not exist.')
 
     def add_project_prefix(self, project_name, company_abbr, project_date=None, project_number=None):
         """Adds the project prefix to the project name
@@ -254,30 +248,6 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
         project_name = project_date + "-" + company_abbr + "-" + str(project_number) + " " + project_name
         return project_name
-
-    def get_tw_post_values(self, form):
-        """Retrieves the POST values
-
-        :param form: The POST form
-        :return: POST values
-        :rtype: dict
-        """
-        postValues = {}
-        try:
-            if form[Teamwork.EVENT].value and \
-                    form[Teamwork.OBJECT_ID].value and \
-                    form[Teamwork.ACCOUNT_ID].value and \
-                    form[Teamwork.USER_ID].value:
-                postValues[Teamwork.EVENT] = form[Teamwork.EVENT].value
-                postValues[Teamwork.OBJECT_ID] = form[Teamwork.OBJECT_ID].value
-                postValues[Teamwork.ACCOUNT_ID] = form[Teamwork.ACCOUNT_ID].value
-                postValues[Teamwork.USER_ID] = form[Teamwork.USER_ID].value
-            else:
-                logging.error('Missing TW post data: ' + json.dumps(form))
-        except KeyError:
-            logging.error('Missing TW post data: ' + json.dumps(form))
-
-        return postValues
 
     def get_project_number(self, company_abbr):
         """Returns the last known project number
@@ -300,9 +270,9 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                     if project_num < int(tmp_project_num_str) and tmp_company_abbr == company_abbr:
                         project_num = int(tmp_project_num_str)
         else:
-            logging.critical('Could not retrieve project to determine starting project number.')
+            app.logger.critical('Could not retrieve project to determine starting project number.')
             sys.exit(1)
-        logging.debug('Most recent project number: ' + str(project_num))
+        app.logger.debug('Most recent project number: ' + str(project_num))
         return project_num
 
     def create_company(self, company_id):
@@ -310,14 +280,14 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
         :param company_id: Teamwork company ID
         """
-        logging.debug('Creating company with Teamwork ID ' + str(company_id))
+        app.logger.debug('Creating company with Teamwork ID ' + str(company_id))
         tw_company = self.teamwork.get_company(company_id)
         company_abbr = tw_company[Teamwork.COMPANY][Teamwork.ADDRESS_ONE]
 
         if company_abbr:
             self.harvest.create_client(company_abbr)
         else:
-            logging.warning('Could not create company in Harvest because the abbreviation (addr one) is empty for ' +
+            app.logger.warning('Could not create company in Harvest because the abbreviation (addr one) is empty for ' +
                             tw_company[Teamwork.COMPANY][Teamwork.NAME])
 
     def update_company(self, company_id):
@@ -325,7 +295,7 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
         :param company_id: Teamwork company ID
         """
-        logging.debug('Updating company with Teamwork ID ' + str(company_id))
+        app.logger.debug('Updating company with Teamwork ID ' + str(company_id))
         tw_company = self.teamwork.get_company(company_id)
         company_abbr = tw_company[Teamwork.COMPANY][Teamwork.ADDRESS_ONE]
 
@@ -333,20 +303,13 @@ class TeamworkHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         if not h_company and company_abbr:
             self.harvest.create_client(company_abbr)
         else:
-            logging.warning('Company already exists in Harvest or the abbreviation (addr one) is empty ("' +
+            app.logger.warning('Company already exists in Harvest or the abbreviation (addr one) is empty ("' +
                             str(company_abbr) + '") for company ' + tw_company[Teamwork.COMPANY][Teamwork.NAME])
 
 
 if __name__ == '__main__':
-    logger = logging.getLogger()
-    logger.setLevel(settings.LOG_LVL)
     log_handler = logging.handlers.TimedRotatingFileHandler(settings.LOG_LOCATION, when='D', interval=1, backupCount=3)
-    logger.addHandler(log_handler)
+    log_handler.setLevel(settings.LOG_LVL)
+    app.logger.addHandler(log_handler)
 
-    daemon_context = daemon.DaemonContext(files_preserve=[log_handler.stream])
-
-    with daemon_context:
-        handler = TeamworkHandler
-        httpd = SocketServer.TCPServer(('127.0.0.1', 8181), handler)
-        logging.debug('Serving at port 8181')
-        httpd.serve_forever()
+    app.run()

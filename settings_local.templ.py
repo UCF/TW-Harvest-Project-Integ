@@ -16,3 +16,6 @@ HARVEST_BASE_URL = 'https://foo.harvestapp.com/'
 # harvest api user/password
 HARVEST_USER = ''
 HARVEST_PASS = ''
+
+# database info
+DB_NAME = ''

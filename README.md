@@ -4,4 +4,5 @@ This project integrates our TeamworkPM and Harvest web applications. It syncs co
 
 ## Requirements
 Python 2.7
+Flask 0.9
 Requests 1.1.0
