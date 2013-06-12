@@ -1,7 +1,8 @@
 import datetime
+from logging import FileHandler
 from flask import Flask
 from harvest import Harvest
-from logging import handlers
+import logging
 import re
 from flask import request
 import settings
@@ -9,9 +10,6 @@ import sys
 from teamwork import Teamwork
 
 app = Flask(__name__)
-log_handler = handlers.TimedRotatingFileHandler(settings.LOG_LOCATION, when='D', interval=1, backupCount=3)
-log_handler.setLevel(settings.LOG_LVL)
-app.logger.addHandler(log_handler)
 
 
 @app.route("/", methods=['POST'])
