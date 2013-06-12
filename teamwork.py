@@ -14,10 +14,10 @@ class Teamwork(object):
     COMPANY_CREATED = 'COMPANY.CREATED'
     COMPANY_UPDATED = 'COMPANY.UPDATED'
 
-    EVENT = 'Event'
-    OBJECT_ID = 'ObjectId'
-    ACCOUNT_ID = 'AccountId'
-    USER_ID = 'UserId'
+    EVENT = 'event'
+    OBJECT_ID = 'objectId'
+    ACCOUNT_ID = 'accountId'
+    USER_ID = 'userId'
 
     # API strings
     REQ_TYPE = '.json'
