@@ -28,21 +28,30 @@ class TeamworkHandler(object):
     def __init__(self):
         """Initializes the handler.
         """
-        app.logger.debug('Initiating TeamworkHandler...')
+        app.logger.debug('Initiating Handlers...')
         self.teamwork = Teamwork(settings.TEAMWORK_BASE_URL, settings.TEAMWORK_USER, settings.TEAMWORK_PASS)
         self.harvest = Harvest(settings.HARVEST_BASE_URL, settings.HARVEST_USER, settings.HARVEST_PASS)
+        app.logger.debug('Finished Initialization')
 
     def process_request(self, request):
         """Process Teamwork POST
         """
+        app.logger.debug('Processing request...')
         post_values = request.form
+        app.logger.debug('Retrieved form data')
+        for key, val in post_values.items():
+            app.logger.debug('key: ' + key)
+            app.logger.debug('val: ' + val)
         event = post_values[Teamwork.EVENT]
+        app.logger.info('Recieved event type: ' + event)
         if event == Teamwork.PROJECT_CREATED or event == Teamwork.PROJECT_UPDATED:
             self.set_project_code(post_values[Teamwork.OBJECT_ID])
         elif event == Teamwork.COMPANY_CREATED:
             self.create_company(post_values[Teamwork.OBJECT_ID])
         elif event == Teamwork.COMPANY_UPDATED:
             self.update_company(post_values[Teamwork.OBJECT_ID])
+
+        app.logger.debug('Finished processing request')
 
     def set_project_code(self, tw_project_id):
         """Prepends the project code to the project name.
