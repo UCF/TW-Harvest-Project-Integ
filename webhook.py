@@ -23,7 +23,7 @@ def post():
 
 class TeamworkHandler(object):
 
-    PROJ_NAME_PATTERN = "^[0-9]*-[A-Z]*-[0-9]* .*$"
+    PROJ_NAME_PATTERN = "^[0-9]{4}-[A-Z]+-[0-9]+ .*$"
 
     def __init__(self):
         """Initializes the handler.
@@ -79,8 +79,8 @@ class TeamworkHandler(object):
         project_name = tw_project[Teamwork.PROJECT][Teamwork.NAME]
         tw_company = self.teamwork.get_company(tw_project[Teamwork.PROJECT][Teamwork.COMPANY][Teamwork.ID])
         new_company_abbr = tw_company[Teamwork.COMPANY][Teamwork.ADDRESS_ONE]
-        company_abbr = re.sub("^[0-9]*-", "", project_name)
-        company_abbr = re.sub("-[0-9]* .*$", "", company_abbr)
+        company_abbr = re.sub("^[0-9]{4}-", "", project_name)
+        company_abbr = re.sub("-[0-9]+ .*$", "", company_abbr)
         new_project_name = project_name
         if new_company_abbr != company_abbr:
             new_project_name = self.update_project_name(project_name, new_company_abbr,
@@ -97,12 +97,12 @@ class TeamworkHandler(object):
         :param company_abbr: Company abbreviation
         :param tw_project_id: TeamworkPM project ID
         """
-        project_number = re.sub("^[0-9]*-[A-Z]*-", "", project_name)
+        project_number = re.sub("^[0-9]{4}-[A-Z]+-", "", project_name)
         project_number = re.search("^[0-9]", project_number).group(0)
 
-        project_date = re.sub("-[A-Z]*-[0-9]* .*$", "", project_name)
+        project_date = re.sub("-[A-Z]+-[0-9]+ .*$", "", project_name)
 
-        postfix_project_name = re.sub("^[0-9]*-[A-Z]*-[0-9]* ", "", project_name)
+        postfix_project_name = re.sub("^[0-9]{4}-[A-Z]+-[0-9]+ ", "", project_name)
 
         new_project_name = self.add_project_prefix(postfix_project_name, company_abbr, project_date, project_number)
         app.logger.debug('Updating project name ' + new_project_name + ' for client ' + company_abbr)
@@ -179,8 +179,8 @@ class TeamworkHandler(object):
         """
         projects = self.harvest.get_projects()
         for project in projects:
-            h_project_number = re.sub("^[0-9]*-[A-Z]*-", "", project[Harvest.PROJECT][Harvest.NAME])
-            h_project_number = re.search("^[0-9]", h_project_number).group(0)
+            h_project_number = re.sub("^[0-9]{4}-[A-Z]+-", "", project[Harvest.PROJECT][Harvest.NAME])
+            h_project_number = re.search("^[0-9]+", h_project_number).group(0)
 
             if h_project_number == str(project_number):
                 return project
@@ -272,11 +272,11 @@ class TeamworkHandler(object):
             for project in projects[Teamwork.PROJECTS]:
                 name = project[Teamwork.NAME]
                 if re.match(TeamworkHandler.PROJ_NAME_PATTERN, name):
-                    tmp_company_abbr = re.sub("^[0-9]*-", '', name)
-                    tmp_company_abbr = re.sub("-[0-9]* .*$", "", tmp_company_abbr)
+                    tmp_company_abbr = re.sub("^[0-9]{4}-", '', name)
+                    tmp_company_abbr = re.sub("-[0-9]+ .*$", "", tmp_company_abbr)
 
-                    tmp_project_num_str = re.sub("^[0-9]*-[A-Z]*-", "", name)
-                    tmp_project_num_str = re.search("^[0-9]*", tmp_project_num_str).group(0)
+                    tmp_project_num_str = re.sub("^[0-9]{4}-[A-Z]+-", "", name)
+                    tmp_project_num_str = re.search("^[0-9]+", tmp_project_num_str).group(0)
                     if project_num < int(tmp_project_num_str) and tmp_company_abbr == company_abbr:
                         project_num = int(tmp_project_num_str)
         else:
