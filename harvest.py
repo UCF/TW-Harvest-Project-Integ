@@ -226,7 +226,7 @@ class Harvest(object):
         """
         people = self.get_people()
         for person in people:
-            if person[Harvest.USER][Harvest.EMAIL] == email:
+            if person[Harvest.USER][Harvest.EMAIL].lower() == email.lower():
                 return person
 
         return None

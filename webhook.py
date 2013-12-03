@@ -154,7 +154,7 @@ class TeamworkHandler(object):
             for tw_email in tw_emails.values():
                 match = False
                 for h_email in h_emails.values():
-                    if tw_email == h_email:
+                    if tw_email.lower() == h_email.lower():
                         match = True
                 if not match:
                     h_person = self.harvest.get_person_by_email(tw_email)
