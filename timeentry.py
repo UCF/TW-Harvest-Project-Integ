@@ -31,7 +31,7 @@ class TimeImport():
                 user_email = h_user[Harvest.USER][Harvest.EMAIL]
 
                 for tw_id, tw_email in tw_project_emails.iteritems():
-                    if user_email == tw_email:
+                    if user_email.lower() == tw_email.lower():
                         self.teamwork.add_time_entry(tw_project_id, tw_id, entry[Harvest.DAY_ENTRY][Harvest.HOURS], True)
                         break
 
