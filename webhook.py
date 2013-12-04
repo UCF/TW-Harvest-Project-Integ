@@ -60,14 +60,18 @@ class TeamworkHandler(object):
         """
         try:
             tw_project = self.teamwork.get_project(tw_project_id)
-            project_name = tw_project[Teamwork.PROJECT][Teamwork.NAME]
+            if tw_project is not None:
+                project_name = tw_project[Teamwork.PROJECT][Teamwork.NAME]
 
-            if not re.match(TeamworkHandler.PROJ_NAME_PATTERN, project_name):
-                app.logger.debug('Webhook project create')
-                self.create_project(tw_project)
+                if not re.match(TeamworkHandler.PROJ_NAME_PATTERN, project_name):
+                    app.logger.debug('Webhook project create')
+                    self.create_project(tw_project)
+                else:
+                    app.logger.debug('Webhook project update')
+                    self.update_project(tw_project)
             else:
-                app.logger.debug('Webhook project update')
-                self.update_project(tw_project)
+                # may be deleted
+                app.logger.error('Teamwork project does not exist with TeamworkPM ID of ' + tw_project_id)
         except KeyError:
             app.logger.exception('Could no update project with TeamworkPM ID of ' + tw_project_id)
 
@@ -136,39 +140,45 @@ class TeamworkHandler(object):
         tw_emails = self.get_tw_project_emails(tw_project_id)
         app.logger.debug('Teamwork assigned people: ' + str(tw_emails))
 
-        h_project = self.harvest.get_project_by_name(project_name)
-        h_project_id = h_project[Harvest.PROJECT][Harvest.ID]
-        h_emails = self.get_h_project_emails(h_project_id)
-        app.logger.debug('Harvest assigned people: ' + str(h_emails))
+        try:
+            h_project = self.harvest.get_project_by_name(project_name)
+            if h_project is not None:
+                h_project_id = h_project[Harvest.PROJECT][Harvest.ID]
+                h_emails = self.get_h_project_emails(h_project_id)
+                app.logger.debug('Harvest assigned people: ' + str(h_emails))
 
-        add_people = []
-        remove_people = []
+                add_people = []
+                remove_people = []
 
-        if not tw_emails:
-            remove_people.extend(h_emails.keys())
-        else:
-            for h_id, h_email in h_emails.iteritems():
-                if h_email not in tw_emails.values():
-                    remove_people.append(h_id)
+                if not tw_emails:
+                    remove_people.extend(h_emails.keys())
+                else:
+                    for h_id, h_email in h_emails.iteritems():
+                        if h_email not in tw_emails.values():
+                            remove_people.append(h_id)
 
-            for tw_email in tw_emails.values():
-                match = False
-                for h_email in h_emails.values():
-                    if tw_email.lower() == h_email.lower():
-                        match = True
-                if not match:
-                    h_person = self.harvest.get_person_by_email(tw_email)
-                    if h_person:
-                        add_people.append(h_person[Harvest.USER][Harvest.ID])
-                    else:
-                        app.logger.warning('No user with this email "' + tw_email + '" exists in Harvest.')
+                    for tw_email in tw_emails.values():
+                        match = False
+                        for h_email in h_emails.values():
+                            if tw_email.lower() == h_email.lower():
+                                match = True
+                        if not match:
+                            h_person = self.harvest.get_person_by_email(tw_email)
+                            if h_person:
+                                add_people.append(h_person[Harvest.USER][Harvest.ID])
+                            else:
+                                app.logger.warning('No user with this email "' + tw_email + '" exists in Harvest.')
 
-        app.logger.debug('Adding people to project "' + project_name + '" ' + str(add_people))
-        for person_id in add_people:
-            self.harvest.add_user_assignment(h_project_id, person_id)
-        app.logger.debug('Removing people from project "' + project_name + '" ' + str(remove_people))
-        for person_id in remove_people:
-            self.harvest.remove_user_assignment(h_project_id, person_id)
+                app.logger.debug('Adding people to project "' + project_name + '" ' + str(add_people))
+                for person_id in add_people:
+                    self.harvest.add_user_assignment(h_project_id, person_id)
+                app.logger.debug('Removing people from project "' + project_name + '" ' + str(remove_people))
+                for person_id in remove_people:
+                    self.harvest.remove_user_assignment(h_project_id, person_id)
+            else:
+                app.logger.error('Harvest project does not exist ' + project_name)
+        except KeyError:
+            app.logger.exception('Could no update project users for project name ' + project_name)
 
     def get_h_project_by_number(self, project_number):
         """Retrieves the project by the project number
