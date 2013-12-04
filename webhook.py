@@ -71,7 +71,7 @@ class TeamworkHandler(object):
                     self.update_project(tw_project)
             else:
                 # may be deleted
-                app.logger.error('Teamwork project does not exist with TeamworkPM ID of ' + tw_project_id)
+                app.logger.warning('Teamwork project does not exist with TeamworkPM ID of ' + tw_project_id)
         except KeyError:
             app.logger.exception('Could no update project with TeamworkPM ID of ' + tw_project_id)
 
