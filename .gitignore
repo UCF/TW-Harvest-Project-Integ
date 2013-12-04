@@ -10,3 +10,4 @@ settings_local.py
 
 # Logging
 *.log
+*.log.*
