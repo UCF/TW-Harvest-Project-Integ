@@ -275,7 +275,7 @@ class TeamworkHandler(object):
         :return: Last project number
         :rtype: int
         """
-        project_num = 0
+        project_num = 99
 
         projects = self.teamwork.get_projects()
         if projects:
