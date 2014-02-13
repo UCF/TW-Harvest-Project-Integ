@@ -82,17 +82,21 @@ class TeamworkHandler(object):
         """
         project_name = tw_project[Teamwork.PROJECT][Teamwork.NAME]
         tw_company = self.teamwork.get_company(tw_project[Teamwork.PROJECT][Teamwork.COMPANY][Teamwork.ID])
-        new_company_abbr = tw_company[Teamwork.COMPANY][Teamwork.ADDRESS_ONE]
-        company_abbr = re.sub("^[0-9]{4}-", "", project_name)
-        company_abbr = re.sub("-[0-9]+ .*$", "", company_abbr)
         new_project_name = project_name
-        if new_company_abbr != company_abbr:
-            new_project_name = self.update_project_name(project_name, new_company_abbr,
-                                                        tw_project[Teamwork.PROJECT][Teamwork.ID])
-        else:
-            app.logger.debug('Project name does not need to be updated ' + project_name)
 
-        self.update_project_users(new_project_name, tw_project[Teamwork.PROJECT][Teamwork.ID])
+        # Update project name if a valid Teamwork Company is provided otherwise do nothing
+        if Teamwork.COMPANY in tw_company and Teamwork.ADDRESS_ONE in tw_company[Teamwork.COMPANY] and tw_company[Teamwork.COMPANY][Teamwork.ADDRESS_ONE]:
+            new_company_abbr = tw_company[Teamwork.COMPANY][Teamwork.ADDRESS_ONE]
+            company_abbr = re.sub("^[0-9]{4}-", "", project_name)
+            company_abbr = re.sub("-[0-9]+ .*$", "", company_abbr)
+            if new_company_abbr != company_abbr:
+                new_project_name = self.update_project_name(project_name, new_company_abbr,
+                                                            tw_project[Teamwork.PROJECT][Teamwork.ID])
+            else:
+                # Do nothing otherwise run into an infinate loop situation
+                app.logger.debug('Project name does not need to be updated ' + project_name)
+
+            self.update_project_users(new_project_name, tw_project[Teamwork.PROJECT][Teamwork.ID])
 
     def update_project_name(self, project_name, company_abbr, tw_project_id):
         """Update the project name in TeamworkPM and Harvest
@@ -101,21 +105,17 @@ class TeamworkHandler(object):
         :param company_abbr: Company abbreviation
         :param tw_project_id: TeamworkPM project ID
         """
-        project_number = re.sub("^[0-9]{4}-[A-Z]+-", "", project_name)
-        project_number = re.search("^[0-9]", project_number).group(0)
-
         project_date = re.sub("-[A-Z]+-[0-9]+ .*$", "", project_name)
-
         postfix_project_name = re.sub("^[0-9]{4}-[A-Z]+-[0-9]+ ", "", project_name)
 
-        new_project_name = self.add_project_prefix(postfix_project_name, company_abbr, project_date, project_number)
-        app.logger.debug('Updating project name ' + new_project_name + ' for client ' + company_abbr)
+        new_project_name = self.add_project_prefix(postfix_project_name, company_abbr, project_date)
+        app.logger.debug('Updating project name ' + project_name + ' to new name ' + new_project_name)
 
         # Update Teamwork project
         self.teamwork.update_project(new_project_name, tw_project_id)
 
         # Update Harvest project
-        h_project = self.get_h_project_by_number(project_number)
+        h_project = self.harvest.get_project_by_name(project_name)
         if h_project:
             h_client = self.harvest.get_client_by_name(company_abbr)
             if h_client:
@@ -124,10 +124,10 @@ class TeamworkHandler(object):
                                             h_client[Harvest.CLIENT][Harvest.ID])
             else:
                 app.logger.error('Could not update Harvest project because Client ' + company_abbr +
-                              ' does not exist.')
+                                 ' does not exist.')
         else:
             app.logger.error('Could not update Harvest project because matching Project name ' + project_name +
-                          ' does not exist')
+                             ' does not exist')
 
         return new_project_name
 
@@ -180,23 +180,6 @@ class TeamworkHandler(object):
         except KeyError:
             app.logger.exception('Could no update project users for project name ' + project_name)
 
-    def get_h_project_by_number(self, project_number):
-        """Retrieves the project by the project number
-
-        :param project_number: Project number
-        :return: Project
-        :rtype: dict
-        """
-        projects = self.harvest.get_projects()
-        for project in projects:
-            h_project_number = re.sub("^[0-9]{4}-[A-Z]+-", "", project[Harvest.PROJECT][Harvest.NAME])
-            h_project_number = re.search("^[0-9]+", h_project_number).group(0)
-
-            if h_project_number == str(project_number):
-                return project
-
-        return None
-
     def get_tw_project_emails(self, project_id):
         """Get a list of assigned emails to the given project
 
@@ -235,19 +218,22 @@ class TeamworkHandler(object):
         tw_project_id = tw_project[Teamwork.PROJECT][Teamwork.ID]
         project_name = tw_project[Teamwork.PROJECT][Teamwork.NAME]
         tw_company = self.teamwork.get_company(tw_project[Teamwork.PROJECT][Teamwork.COMPANY][Teamwork.ID])
-        company_abbr = tw_company[Teamwork.COMPANY][Teamwork.ADDRESS_ONE]
-        app.logger.debug('Creating new project ' + project_name + ' for client ' + company_abbr)
 
-        # Update Teamwork project
-        new_project_name = self.add_project_prefix(project_name, company_abbr)
-        self.teamwork.update_project(new_project_name, tw_project_id)
+        # Create project prefix and Harvest project if a Teamwork company is found
+        if Teamwork.COMPANY in tw_company and Teamwork.ADDRESS_ONE in tw_company[Teamwork.COMPANY] and tw_company[Teamwork.COMPANY][Teamwork.ADDRESS_ONE]:
+            company_abbr = tw_company[Teamwork.COMPANY][Teamwork.ADDRESS_ONE]
+            app.logger.debug('Creating new project ' + project_name + ' for client ' + company_abbr)
 
-        # Create Harvest project
-        h_client = self.harvest.get_client_by_name(company_abbr)
-        if h_client:
-            self.harvest.create_project(new_project_name, h_client[Harvest.CLIENT][Harvest.ID])
-        else:
-            app.logger.error('Could not Create Harvest project because Client ' + company_abbr + ' does not exist.')
+            # Update Teamwork project with new name
+            new_project_name = self.add_project_prefix(project_name, company_abbr)
+            self.teamwork.update_project(new_project_name, tw_project_id)
+
+            # Create Harvest project
+            h_client = self.harvest.get_client_by_name(company_abbr)
+            if h_client:
+                self.harvest.create_project(new_project_name, h_client[Harvest.CLIENT][Harvest.ID])
+            else:
+                app.logger.error('Could not Create Harvest project because Client ' + company_abbr + ' does not exist.')
 
     def add_project_prefix(self, project_name, company_abbr, project_date=None, project_number=None):
         """Adds the project prefix to the project name
@@ -308,7 +294,7 @@ class TeamworkHandler(object):
             self.harvest.create_client(company_abbr)
         else:
             app.logger.warning('Could not create company in Harvest because the abbreviation (addr one) is empty for ' +
-                            tw_company[Teamwork.COMPANY][Teamwork.NAME])
+                               tw_company[Teamwork.COMPANY][Teamwork.NAME])
 
     def update_company(self, company_id):
         """Update a company in Harvest
@@ -324,7 +310,7 @@ class TeamworkHandler(object):
             self.harvest.create_client(company_abbr)
         else:
             app.logger.warning('Company already exists in Harvest or the abbreviation (addr one) is empty ("' +
-                            str(company_abbr) + '") for company ' + tw_company[Teamwork.COMPANY][Teamwork.NAME])
+                               str(company_abbr) + '") for company ' + tw_company[Teamwork.COMPANY][Teamwork.NAME])
 
 
 if __name__ == '__main__':

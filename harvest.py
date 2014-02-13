@@ -121,9 +121,10 @@ class Harvest(object):
         :rtype: dict
         """
         projects = self.get_projects()
-        for project in projects:
-            if project[Harvest.PROJECT][Harvest.NAME] == name:
-                return project
+        if projects:
+            for project in projects:
+                if project[Harvest.PROJECT][Harvest.NAME] == name:
+                    return project
         return None
 
     def get_todays_updated_projects(self):
