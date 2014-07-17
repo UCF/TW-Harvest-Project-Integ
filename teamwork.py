@@ -63,7 +63,7 @@ class Teamwork(object):
         :return: The project
         :rtype: dict
         """
-        return self.get_request(self.base_url + Teamwork.PROJECTS_URL + Teamwork.REQ_TYPE + '?status=ALL')
+        return self.get_request(self.base_url + Teamwork.PROJECTS_URL + Teamwork.REQ_TYPE + '?status=ALL', True, PROJECTS)
 
     def get_project(self, id):
         """Retrieves project based on the ID
@@ -134,23 +134,62 @@ class Teamwork(object):
         return self.post_request(self.base_url + Teamwork.PROJECTS_URL + '/' + project_id +
                                  Teamwork.TIME_ENTRIES_URL + Teamwork.REQ_TYPE, data)
 
-    def get_request(self, url):
+    def get_request(self, url, paged=False, array_name=None):
         """Performs a GET request with the given url
 
         :param url: URL to make the request against
         :return: Response
         :rtype: dict
         """
-        req = requests.get(url=url,
-                           auth=self.auth,
-                           headers=self.headers)
 
-        if req.status_code != httplib.OK:
-            logging.error('Could not make GET request using url: ' + url +
-                          ' Response headers: ' + str(req.headers))
-            return None
+        json = None
+        is_more_pages = True
 
-        return req.json()
+        # do-while loop
+        while is_more_pages:
+
+            # Not paged so only run once
+            is_more_pages = paged
+
+            req = requests.get(url=url,
+                               auth=self.auth,
+                               headers=self.headers)
+
+            # Do not return anything if any of the requests are not OK
+            if req.status_code != httplib.OK:
+                logging.error('Could not make GET request using url: ' + url +
+                              ' Response headers: ' + str(req.headers))
+                return None
+
+            if json is None:
+                json = req.json()
+
+            if paged:
+                # Check for array name to store values since
+                # we are getting paged data
+                if not isinstance(array_name, str):
+                    return None
+
+                try:
+                    page = int(req.headers['X-Page'])
+                    total_pages = int(req.headers['X-Pages'])
+
+                    if page != 1:
+                        json[array_name].extend(req.json()[array_name])
+
+                    if page == total_pages:
+                        # check if we got the last page
+                        is_more_pages = False
+                    else:
+                        # Get the next page url
+                        url = (url.replace('&page=%d' % page, '')) if 'page' in url else url
+                        url = url + '&page=' + str(page + 1)
+
+                except KeyError:
+                    logging.error('Could not find X-Page or X-Pages in the response headers')
+                    return None
+
+        return json
 
     def post_request(self, url, data):
         """Performs a POST request with the given url and data

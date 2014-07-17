@@ -1,12 +1,16 @@
 import datetime
-from logging import FileHandler
-from flask import Flask
-from harvest import Harvest
 import logging
+from logging import handlers
+from logging import Formatter
 import re
-from flask import request
 import settings
 import sys
+
+from flask import abort
+from flask import Flask
+from flask import request
+
+from harvest import Harvest
 from teamwork import Teamwork
 
 app = Flask(__name__)
@@ -277,7 +281,7 @@ class TeamworkHandler(object):
                         project_num = int(tmp_project_num_str)
         else:
             app.logger.critical('Could not retrieve project to determine starting project number.')
-            sys.exit(1)
+            abort(404)
         app.logger.debug('Most recent project number: ' + str(project_num))
         return project_num
 
