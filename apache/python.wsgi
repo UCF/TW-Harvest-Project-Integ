@@ -14,5 +14,5 @@ from webhook import app as application
 log_handler = handlers.TimedRotatingFileHandler(settings.LOG_LOCATION, when=settings.LOG_ROTATE, interval=1, backupCount=3)
 log_handler.setFormatter(Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]', datefmt="%d-%m-%Y %H:%M:%S"))
 log_handler.setLevel(settings.LOG_LVL)
-app.logger.setLevel(settings.LOG_LVL)
-app.logger.addHandler(log_handler)
+application.logger.setLevel(settings.LOG_LVL)
+application.logger.addHandler(log_handler)

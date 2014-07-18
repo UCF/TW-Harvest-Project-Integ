@@ -63,7 +63,7 @@ class Teamwork(object):
         :return: The project
         :rtype: dict
         """
-        return self.get_request(self.base_url + Teamwork.PROJECTS_URL + Teamwork.REQ_TYPE + '?status=ALL', True, PROJECTS)
+        return self.get_request(self.base_url + Teamwork.PROJECTS_URL + Teamwork.REQ_TYPE + '?status=ALL', True, Teamwork.PROJECTS)
 
     def get_project(self, id):
         """Retrieves project based on the ID
