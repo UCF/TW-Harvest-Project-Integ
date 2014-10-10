@@ -34,6 +34,10 @@ class Harvest(object):
     DAY_ENTRY = 'day_entry'
     HOURS = 'hours'
 
+    BILL_BY = 'bill_by'
+    TASKS = 'Tasks'
+    PEOPLE = 'People'
+
     def __init__(self, base_url, username, password):
         """Initializes the handler.
 
@@ -161,7 +165,7 @@ class Harvest(object):
         :return: Project ID
         :rtype: str
         """
-        data = {Harvest.PROJECT: {Harvest.NAME: name, Harvest.CLIENT_ID: client_id}}
+        data = {Harvest.PROJECT: {Harvest.NAME: name, Harvest.CLIENT_ID: client_id, Harvest.BILL_BY: Harvest.TASKS}}
         location = self.post_request(self.base_url + Harvest.PROJECTS_URL, data)
 
         if location is None:
