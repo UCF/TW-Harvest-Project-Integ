@@ -2,8 +2,16 @@
 import os
 import sys
 import logging
+import site
 from logging import handlers
 from logging import Formatter
+
+site.addsitedir('/var/www/apps/TW-Harvest-Project-Integ/lib/python2.6/site-packages')
+
+if '/usr/lib64/python2.6/site-packages' in sys.path:
+        sys.path.remove('/usr/lib64/python2.6/site-packages')
+if '/usr/lib/python2.6/site-packages' in sys.path:
+        sys.path.remove('/usr/lib/python2.6/site-packages')
 
 parent = lambda f: os.path.dirname(f)
 appname = os.path.basename(parent(parent(__file__)))
