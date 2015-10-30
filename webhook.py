@@ -13,6 +13,8 @@ from flask import request
 from harvest import Harvest
 from teamwork import Teamwork
 
+from jobs.models import Session, TWProject
+
 app = Flask(__name__)
 
 
