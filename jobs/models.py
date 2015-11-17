@@ -13,8 +13,8 @@ class TWProject(Base):
     __tablename__ = 'tw_projects'
 
     # fields
-    id = Column(Integer, Sequence('pk_seq'), primary_key=True)
-    tw_project_id = Column(String)
+    id = Column(Integer, primary_key=True)
+    tw_project_id = Column(String(64))
     client_code = Column(String(3))
     client_job_id = Column(Integer)
 
