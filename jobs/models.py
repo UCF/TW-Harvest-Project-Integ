@@ -1,7 +1,12 @@
-from sqlalchemy import Column, Integer, String, Sequence
+from sqlalchemy import Column
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy import Sequence
+from sqlalchemy import Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import PrimaryKeyConstraint
 
 import settings
 
@@ -10,16 +15,18 @@ Session = sessionmaker(bind=Engine)
 Base = declarative_base()
 
 class TWProject(Base):
-    __tablename__ = 'tw_projects'
+    __table__ = Table('tw_project', Base.metadata,
+        Column('tw_project_id', String(16), unique=True),
+        Column('company_abbr', String(16), unique=False),
+        Column('company_job_id', Integer),
+        PrimaryKeyConstraint('company_job_id', 'company_abbr', name='tw_projects_pk')
+    )
 
-    # fields
-    id = Column(Integer, primary_key=True)
-    tw_project_id = Column(String(64))
-    client_code = Column(String(3))
-    client_job_id = Column(Integer)
 
 def dbsetup():
-    """Setup Database (for deployment)
     """
-
+    Setup Database (for deployment)
+    """
+    Session().close()
+    Base.metadata.drop_all(bind=Engine, checkfirst=True)
     Base.metadata.create_all(Engine)
