@@ -267,12 +267,18 @@ class TeamworkHandler(object):
         :return: Last project number
         :rtype: int
         """
+
+        # TODO: Replace this code with an insert to db and a request for generated id.
+        # possibly retrieve company_project_id before session.commit() since it's generated
+        # by our class model before commiting to database.
+
         project_num = 99
 
         projects = self.teamwork.get_projects()
         if projects:
             for project in projects[Teamwork.PROJECTS]:
                 name = project[Teamwork.NAME]
+                tw_project_id = project[Teamwork.ID]
                 if re.match(TeamworkHandler.PROJ_NAME_PATTERN, name):
                     tmp_company_abbr = re.sub("^[0-9]{4}-", '', name)
                     tmp_company_abbr = re.sub("-[0-9]+ .*$", "", tmp_company_abbr)
