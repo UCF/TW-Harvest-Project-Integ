@@ -91,8 +91,8 @@ class TeamworkHandler(object):
         new_project_name = project_name
 
         # Update project name if a valid Teamwork Company is provided otherwise do nothing
-        if Teamwork.COMPANY in tw_company and Teamwork.ADDRESS_ONE in tw_company[Teamwork.COMPANY] and tw_company[Teamwork.COMPANY][Teamwork.ADDRESS_ONE]:
-            new_company_abbr = tw_company[Teamwork.COMPANY][Teamwork.ADDRESS_ONE]
+        if Teamwork.COMPANY in tw_company and Teamwork.COMPANY_ABBR in tw_company[Teamwork.COMPANY] and tw_company[Teamwork.COMPANY][Teamwork.COMPANY_ABBR]:
+            new_company_abbr = tw_company[Teamwork.COMPANY][Teamwork.COMPANY_ABBR]
             company_abbr = re.sub("^[0-9]{4}-", "", project_name)
             company_abbr = re.sub("-[0-9]+ .*$", "", company_abbr)
             if new_company_abbr != company_abbr:
@@ -226,8 +226,8 @@ class TeamworkHandler(object):
         tw_company = self.teamwork.get_company(tw_project[Teamwork.PROJECT][Teamwork.COMPANY][Teamwork.ID])
 
         # Create project prefix and Harvest project if a Teamwork company is found
-        if Teamwork.COMPANY in tw_company and Teamwork.ADDRESS_ONE in tw_company[Teamwork.COMPANY] and tw_company[Teamwork.COMPANY][Teamwork.ADDRESS_ONE]:
-            company_abbr = tw_company[Teamwork.COMPANY][Teamwork.ADDRESS_ONE]
+        if Teamwork.COMPANY in tw_company and Teamwork.COMPANY_ABBR in tw_company[Teamwork.COMPANY] and tw_company[Teamwork.COMPANY][Teamwork.COMPANY_ABBR]:
+            company_abbr = tw_company[Teamwork.COMPANY][Teamwork.COMPANY_ABBR]
             app.logger.debug('Creating new project ' + project_name + ' for client ' + company_abbr)
 
             # Update Teamwork project with new name
@@ -294,7 +294,7 @@ class TeamworkHandler(object):
         """
         app.logger.debug('Creating company with Teamwork ID ' + str(company_id))
         tw_company = self.teamwork.get_company(company_id)
-        company_abbr = tw_company[Teamwork.COMPANY][Teamwork.ADDRESS_ONE]
+        company_abbr = tw_company[Teamwork.COMPANY][Teamwork.COMPANY_ABBR]
 
         if company_abbr:
             self.harvest.create_client(company_abbr)
@@ -309,7 +309,7 @@ class TeamworkHandler(object):
         """
         app.logger.debug('Updating company with Teamwork ID ' + str(company_id))
         tw_company = self.teamwork.get_company(company_id)
-        company_abbr = tw_company[Teamwork.COMPANY][Teamwork.ADDRESS_ONE]
+        company_abbr = tw_company[Teamwork.COMPANY][Teamwork.COMPANY_ABBR]
 
         h_company = self.harvest.get_client_by_name(company_abbr)
         if not h_company and company_abbr:
