@@ -32,9 +32,14 @@ class TWProject(Base):
     __table__ = Table('tw_project', Base.metadata,
         Column('tw_project_id',  String(16), primary_key=True, nullable=False),
         Column('company_abbr',   String(16), unique=False),
-        Column('company_job_id', Integer,    default=default_company_job_id),
+        Column('company_job_id', Integer,    default=default_company_job_id, onupdate=default_company_job_id),
         UniqueConstraint('company_job_id', 'company_abbr', name='tw_project_uk')
     )
+
+    def __str__(self):
+        return 'tw_project_id = {0}, company_abbr = {1}, company_job_id = {2}'.format(self.tw_project_id, self.company_abbr, self.company_job_id)
+        
+
 
 def dbsetup():
     """
