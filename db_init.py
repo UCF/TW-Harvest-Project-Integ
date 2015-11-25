@@ -4,8 +4,9 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from jobs.models import dbsetup
 
+
 def main():
-	dbsetup()
+    dbsetup()
 
 if __name__ == '__main__':
-	main()
+    main()
