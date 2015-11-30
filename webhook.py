@@ -1,22 +1,22 @@
-import datetime
-import logging
-from logging import handlers
-from logging import Formatter
-import re
-import settings
-import sys
-
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm.exc import NoResultFound
-
 from flask import abort
 from flask import Flask
 from flask import request
 
 from harvest import Harvest
+
+from jobs.models import connect_to_database
+from jobs.models import TWProject
+
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm.exc import NoResultFound
+
 from teamwork import Teamwork
 
-from jobs.models import Session, TWProject
+import datetime
+import logging
+import re
+import settings
+import sys
 
 app = Flask(__name__)
 
@@ -36,25 +36,39 @@ class TeamworkHandler(object):
     PROJ_NAME_PATTERN = "^[0-9]{4}-[A-Z]+-[0-9]+ .*$"
 
     def __init__(self):
-        """Initializes the handler.
+        """
+        Initializes the handler
         """
         app.logger.debug('Initiating Handlers...')
-        self.session = Session()
-        self.teamwork = Teamwork(settings.TEAMWORK_BASE_URL, settings.TEAMWORK_USER, settings.TEAMWORK_PASS)
-        self.harvest = Harvest(settings.HARVEST_BASE_URL, settings.HARVEST_USER, settings.HARVEST_PASS)
+        engine = connect_to_database()
+        self.Session = sessionmaker()
+        self.Session.configure(bind=engine)
+
+        self.teamwork = Teamwork(
+            settings.TEAMWORK_BASE_URL,
+            settings.TEAMWORK_USER,
+            settings.TEAMWORK_PASS)
+        self.harvest = Harvest(
+            settings.HARVEST_BASE_URL,
+            settings.HARVEST_USER,
+            settings.HARVEST_PASS)
         app.logger.debug('Finished Initialization')
 
     def process_request(self, request):
-        """Process Teamwork POST
+        """
+        Process Teamwork POST
         """
         app.logger.debug('Processing request...')
         post_values = request.form
         app.logger.debug('Retrieved form data')
+
         for key, val in post_values.items():
             app.logger.debug('key: ' + key)
             app.logger.debug('val: ' + val)
+
         event = post_values[Teamwork.EVENT]
         app.logger.info('Recieved event type: ' + event)
+
         if event == Teamwork.PROJECT_CREATED or event == Teamwork.PROJECT_UPDATED:
             self.set_project_code(post_values[Teamwork.OBJECT_ID])
         elif event == Teamwork.COMPANY_CREATED:
@@ -73,8 +87,8 @@ class TeamworkHandler(object):
             tw_project = self.teamwork.get_project(tw_project_id)
             if tw_project is not None:
                 project_name = tw_project[Teamwork.PROJECT][Teamwork.NAME]
-
-                if not re.match(TeamworkHandler.PROJ_NAME_PATTERN, project_name):
+                if not re.match(
+                        TeamworkHandler.PROJ_NAME_PATTERN, project_name):
                     app.logger.debug('Webhook project create')
                     self.create_project(tw_project)
                 else:
@@ -82,9 +96,13 @@ class TeamworkHandler(object):
                     self.update_project(tw_project)
             else:
                 # may be deleted
-                app.logger.warning('Teamwork project does not exist with TeamworkPM ID of ' + tw_project_id)
+                app.logger.warning(
+                    'Teamwork project does not exist with TeamworkPM ID of ' +
+                    tw_project_id)
         except KeyError:
-            app.logger.exception('Could no update project with TeamworkPM ID of ' + tw_project_id)
+            app.logger.exception(
+                'Could no update project with TeamworkPM ID of ' +
+                tw_project_id)
 
     def update_project(self, tw_project):
         """Updates the project in TeamworkPM and Harvest
@@ -92,12 +110,20 @@ class TeamworkHandler(object):
         :param tw_project: Teamwork project
         """
         project_name = tw_project[Teamwork.PROJECT][Teamwork.NAME]
-        tw_company = self.teamwork.get_company(tw_project[Teamwork.PROJECT][Teamwork.COMPANY][Teamwork.ID])
+        tw_company = self.teamwork.get_company(
+            tw_project[
+                Teamwork.PROJECT][
+                Teamwork.COMPANY][
+                Teamwork.ID])
         new_project_name = project_name
 
-        # Update project name if a valid Teamwork Company is provided otherwise do nothing
-        if Teamwork.COMPANY in tw_company and Teamwork.COMPANY_ABBR in tw_company[Teamwork.COMPANY] and tw_company[Teamwork.COMPANY][Teamwork.COMPANY_ABBR]:
-            new_company_abbr = tw_company[Teamwork.COMPANY][Teamwork.COMPANY_ABBR]
+        # Update project name if a valid Teamwork Company is provided otherwise
+        # do nothing
+        if Teamwork.COMPANY in tw_company and Teamwork.COMPANY_ABBR in tw_company[
+                Teamwork.COMPANY] and tw_company[Teamwork.COMPANY][Teamwork.COMPANY_ABBR]:
+            new_company_abbr = tw_company[
+                Teamwork.COMPANY][
+                Teamwork.COMPANY_ABBR]
             company_abbr = re.sub("^[0-9]{4}-", "", project_name)
             company_abbr = re.sub("-[0-9]+ .*$", "", company_abbr)
             if new_company_abbr != company_abbr:
@@ -105,9 +131,14 @@ class TeamworkHandler(object):
                                                             tw_project[Teamwork.PROJECT][Teamwork.ID])
             else:
                 # Do nothing otherwise run into an infinate loop situation
-                app.logger.debug('Project name does not need to be updated ' + project_name)
+                app.logger.debug(
+                    'Project name does not need to be updated ' +
+                    project_name)
 
-            self.update_project_users(new_project_name, tw_project[Teamwork.PROJECT][Teamwork.ID])
+            self.update_project_users(
+                new_project_name, tw_project[
+                    Teamwork.PROJECT][
+                    Teamwork.ID])
 
     def update_project_name(self, project_name, company_abbr, tw_project_id):
         """Update the project name in TeamworkPM and Harvest
@@ -117,10 +148,16 @@ class TeamworkHandler(object):
         :param tw_project_id: TeamworkPM project ID
         """
         project_date = re.sub("-[A-Z]+-[0-9]+ .*$", "", project_name)
-        postfix_project_name = re.sub("^[0-9]{4}-[A-Z]+-[0-9]+ ", "", project_name)
+        postfix_project_name = re.sub(
+            "^[0-9]{4}-[A-Z]+-[0-9]+ ", "", project_name)
 
-        new_project_name = self.add_project_prefix(postfix_project_name, company_abbr, tw_project_id, project_date)
-        app.logger.debug('Updating project name ' + project_name + ' to new name ' + new_project_name)
+        new_project_name = self.add_project_prefix(
+            postfix_project_name, company_abbr, tw_project_id, project_date)
+        app.logger.debug(
+            'Updating project name ' +
+            project_name +
+            ' to new name ' +
+            new_project_name)
 
         # Update Teamwork project
         self.teamwork.update_project(new_project_name, tw_project_id)
@@ -174,22 +211,40 @@ class TeamworkHandler(object):
                             if tw_email.lower() == h_email.lower():
                                 match = True
                         if not match:
-                            h_person = self.harvest.get_person_by_email(tw_email)
+                            h_person = self.harvest.get_person_by_email(
+                                tw_email)
                             if h_person:
-                                add_people.append(h_person[Harvest.USER][Harvest.ID])
+                                add_people.append(
+                                    h_person[
+                                        Harvest.USER][
+                                        Harvest.ID])
                             else:
-                                app.logger.warning('No user with this email "' + tw_email + '" exists in Harvest.')
+                                app.logger.warning(
+                                    'No user with this email "' + tw_email + '" exists in Harvest.')
 
-                app.logger.debug('Adding people to project "' + project_name + '" ' + str(add_people))
+                app.logger.debug(
+                    'Adding people to project "' +
+                    project_name +
+                    '" ' +
+                    str(add_people))
                 for person_id in add_people:
                     self.harvest.add_user_assignment(h_project_id, person_id)
-                app.logger.debug('Removing people from project "' + project_name + '" ' + str(remove_people))
+                app.logger.debug(
+                    'Removing people from project "' +
+                    project_name +
+                    '" ' +
+                    str(remove_people))
                 for person_id in remove_people:
-                    self.harvest.remove_user_assignment(h_project_id, person_id)
+                    self.harvest.remove_user_assignment(
+                        h_project_id, person_id)
             else:
-                app.logger.error('Harvest project does not exist ' + project_name)
+                app.logger.error(
+                    'Harvest project does not exist ' +
+                    project_name)
         except KeyError:
-            app.logger.exception('Could no update project users for project name ' + project_name)
+            app.logger.exception(
+                'Could no update project users for project name ' +
+                project_name)
 
     def get_tw_project_emails(self, project_id):
         """Get a list of assigned emails to the given project
@@ -228,25 +283,43 @@ class TeamworkHandler(object):
         """
         tw_project_id = tw_project[Teamwork.PROJECT][Teamwork.ID]
         project_name = tw_project[Teamwork.PROJECT][Teamwork.NAME]
-        tw_company = self.teamwork.get_company(tw_project[Teamwork.PROJECT][Teamwork.COMPANY][Teamwork.ID])
+        tw_company = self.teamwork.get_company(
+            tw_project[
+                Teamwork.PROJECT][
+                Teamwork.COMPANY][
+                Teamwork.ID])
 
-        # Create project prefix and Harvest project if a Teamwork company is found
-        if Teamwork.COMPANY in tw_company and Teamwork.COMPANY_ABBR in tw_company[Teamwork.COMPANY] and tw_company[Teamwork.COMPANY][Teamwork.COMPANY_ABBR]:
+        # Create project prefix and Harvest project if a Teamwork company is
+        # found
+        if Teamwork.COMPANY in tw_company and Teamwork.COMPANY_ABBR in tw_company[
+                Teamwork.COMPANY] and tw_company[Teamwork.COMPANY][Teamwork.COMPANY_ABBR]:
             company_abbr = tw_company[Teamwork.COMPANY][Teamwork.COMPANY_ABBR]
-            app.logger.debug('Creating new project ' + project_name + ' for client ' + company_abbr)
+            app.logger.debug(
+                'Creating new project ' +
+                project_name +
+                ' for client ' +
+                company_abbr)
 
             # Update Teamwork project with new name
-            new_project_name = self.add_project_prefix(project_name, company_abbr, tw_project_id)
+            new_project_name = self.add_project_prefix(
+                project_name, company_abbr, tw_project_id)
             self.teamwork.update_project(new_project_name, tw_project_id)
 
             # Create Harvest project
             h_client = self.harvest.get_client_by_name(company_abbr)
             if h_client:
-                self.harvest.create_project(new_project_name, h_client[Harvest.CLIENT][Harvest.ID])
+                self.harvest.create_project(
+                    new_project_name, h_client[
+                        Harvest.CLIENT][
+                        Harvest.ID])
             else:
-                app.logger.error('Could not Create Harvest project because Client ' + company_abbr + ' does not exist.')
+                app.logger.error(
+                    'Could not Create Harvest project because Client ' +
+                    company_abbr +
+                    ' does not exist.')
 
-    def add_project_prefix(self, project_name, company_abbr, tw_project_id, project_date=None, project_number=None):
+    def add_project_prefix(self, project_name, company_abbr,
+                           tw_project_id, project_date=None, project_number=None):
         """Adds the project prefix to the project name
 
         :param project_name: Project name
@@ -260,9 +333,11 @@ class TeamworkHandler(object):
             project_date = datetime.datetime.now().strftime('%y%m')
 
         if project_number is None:
-            project_number = self.get_project_number(company_abbr, tw_project_id)
+            project_number = self.get_project_number(
+                company_abbr, tw_project_id)
 
-        project_name = project_date + "-" + company_abbr + "-" + str(project_number) + " " + project_name
+        project_name = project_date + "-" + company_abbr + \
+            "-" + str(project_number) + " " + project_name
         return project_name
 
     def get_project_number(self, company_abbr, tw_project_id):
@@ -273,25 +348,33 @@ class TeamworkHandler(object):
         :return: The assigned company_job_id for the project
         :rtype: int
         """
-
+        session = self.Session()
         try:
-            tw_project_data = self.session.query(TWProject).filter(TWProject.tw_project_id==tw_project_id).one()
+            tw_project_data = session.query(TWProject).filter(
+                TWProject.tw_project_id == tw_project_id).one()
             tw_project_data.company_abbr = company_abbr
-            self.session.add(tw_project_data)
+            session.add(tw_project_data)
         except NoResultFound:
-            app.logger.debug('tw_project_id "{0}" not found in DB, inserting new record.'.format(tw_project_id))
-            tw_project_data = TWProject(tw_project_id=tw_project_id, company_abbr=company_abbr)        
-            self.session.add(tw_project_data)
+            app.logger.debug(
+                'tw_project_id "{0}" not found in DB, inserting new record.'.format(tw_project_id))
+            tw_project_data = TWProject(
+                tw_project_id=tw_project_id,
+                company_abbr=company_abbr)
+            session.add(tw_project_data)
 
         try:
-            self.session.commit()
+            session.commit()
             project_num = tw_project_data.company_job_id
         except SQLAlchemyError as error:
-            self.session.rollback()
-            app.logger.critical('Failed to add TW project data to DB: ' + str(error))
+            session.rollback()
+            app.logger.critical(
+                'Failed to add TW project data to DB: {0}'.format(
+                    str(error)))
             abort(404)
-        
-        app.logger.debug('Successfully added DB record: {0}'.format(str(tw_project_data)))
+
+        app.logger.debug(
+            'Successfully added DB record: {0}'.format(
+                str(tw_project_data)))
         return project_num
 
     def create_company(self, company_id):
@@ -299,7 +382,9 @@ class TeamworkHandler(object):
 
         :param company_id: Teamwork company ID
         """
-        app.logger.debug('Creating company with Teamwork ID ' + str(company_id))
+        app.logger.debug(
+            'Creating company with Teamwork ID ' +
+            str(company_id))
         tw_company = self.teamwork.get_company(company_id)
         company_abbr = tw_company[Teamwork.COMPANY][Teamwork.COMPANY_ABBR]
 
@@ -314,7 +399,9 @@ class TeamworkHandler(object):
 
         :param company_id: Teamwork company ID
         """
-        app.logger.debug('Updating company with Teamwork ID ' + str(company_id))
+        app.logger.debug(
+            'Updating company with Teamwork ID ' +
+            str(company_id))
         tw_company = self.teamwork.get_company(company_id)
         company_abbr = tw_company[Teamwork.COMPANY][Teamwork.COMPANY_ABBR]
 
