@@ -14,6 +14,7 @@ from webhook import app
 import re
 import settings
 
+
 class TWProjectPipeline(object):
 
     VALID_PROJECT_NAME = '^[0-9]{4}-[A-Z]+-[0-9]+ .*$'
@@ -28,8 +29,7 @@ class TWProjectPipeline(object):
         self.Session = sessionmaker(bind=engine)
         app.logger.debug('Ready to process project(s)')
 
-    def process_project(self, data):
-        session = self.Session()
+    def process_project(self, data, session):
         project = TWProject(**data)
         try:
             session.add(project)
@@ -43,12 +43,14 @@ class TWProjectPipeline(object):
 
     def insert_projects(self):
         projects = self.teamwork.get_projects()
+        session = self.Session()
         if projects:
             for project in projects[Teamwork.PROJECTS]:
                 name = project[Teamwork.NAME]
                 tw_project_id = project[Teamwork.ID]
 
-                if re.match(TWProjectPipeline.VALID_PROJECT_NAME, name) != None:
+                if re.match(TWProjectPipeline.VALID_PROJECT_NAME,
+                            name) != None:
                     temp_company_abbr = re.sub('^[0-9]{4}-', '', name)
                     temp_company_abbr = re.sub(
                         '-[0-9]+ .*$', '', temp_company_abbr)
@@ -61,7 +63,7 @@ class TWProjectPipeline(object):
                                    company_abbr=temp_company_abbr,
                                    company_job_id=int(temp_company_job_id))
 
-                    self.process_project(tw_data)
+                    self.process_project(tw_data, session)
         else:
             app.logger.critical('Could not retrieve project(s) from Teamwork.')
             abort(404)

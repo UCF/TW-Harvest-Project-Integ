@@ -371,6 +371,8 @@ class TeamworkHandler(object):
                 'Failed to add TW project data to DB: {0}'.format(
                     str(error)))
             abort(404)
+        finally:
+            session.close()
 
         app.logger.debug(
             'Successfully added DB record: {0}'.format(
