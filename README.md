@@ -12,7 +12,7 @@ Configure ``settings_local.py`` + install app dependencies:
 ```shell
 settings='settings_local'
 cd src && pip install -r requirements.txt
-mv "${settings}.templ.py" "${settings}.py"
+cp "${settings}.templ.py" "${settings}.py"
 ```
 
 Build the Teamwork database:
