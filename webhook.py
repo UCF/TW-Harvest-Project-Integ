@@ -350,35 +350,26 @@ class TeamworkHandler(object):
         :rtype: int
         """
         session = self.Session()
-        try:
-            tw_project_data = session.query(TWProject).filter(
-                TWProject.tw_project_id == tw_project_id).one()
-            tw_project_data.company_abbr = company_abbr
-            session.add(tw_project_data)
-        except NoResultFound:
-            app.logger.debug(
-                'tw_project_id "{0}" not found in DB, inserting new record.'.format(tw_project_id))
-            tw_project_data = TWProject(
-                tw_project_id=tw_project_id,
-                company_abbr=company_abbr)
-            session.add(tw_project_data)
+        tw_data = dict(tw_project_id=tw_project_id, company_abbr=company_abbr)
+        record  = TWProject(**tw_data)
+        session.merge(record)
 
         try:
             session.commit()
-            project_num = tw_project_data.company_job_id
         except SQLAlchemyError as error:
             session.rollback()
             app.logger.critical(
-                'Failed to add TW project data to DB: {0}'.format(
+                'Failed to add TW project to database: {0}'.format(
                     str(error)))
             abort(404)
-        finally:
-            session.close()
 
-        app.logger.debug(
-            'Successfully added DB record: {0}'.format(
-                str(tw_project_data)))
-        return project_num
+        result = session.query(TWProject).filter(
+            TWProject.tw_project_id == tw_project_id).one()
+        project_number = result.company_job_id
+
+        session.close()
+        app.logger.debug('Successfully added record: {0}'.format(str(result)))
+        return int(project_number)
 
     def create_company(self, company_id):
         """Create a company in Harvest
