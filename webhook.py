@@ -9,6 +9,7 @@ from jobs.models import TWProject
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm import sessionmaker
 
 from teamwork import Teamwork
 
