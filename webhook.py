@@ -8,7 +8,6 @@ from jobs.models import connect_to_database
 from jobs.models import TWProject
 
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import sessionmaker
 
 from teamwork import Teamwork
@@ -350,8 +349,9 @@ class TeamworkHandler(object):
         :rtype: int
         """
         session = self.Session()
-        tw_data = dict(tw_project_id=tw_project_id, company_abbr=company_abbr)
-        record  = TWProject(**tw_data)
+        data = dict(tw_project_id=tw_project_id,
+                    company_abbr=company_abbr)
+        record = TWProject(**data)
         session.merge(record)
 
         try:
@@ -359,16 +359,18 @@ class TeamworkHandler(object):
         except SQLAlchemyError as error:
             session.rollback()
             app.logger.critical(
-                'Failed to add TW project to database: {0}'.format(
+                'Failed to commit TW project to database: {0}'.format(
                     str(error)))
             abort(404)
 
-        result = session.query(TWProject).filter(
+        fetched = session.query(TWProject).filter(
             TWProject.tw_project_id == tw_project_id).one()
-        project_number = result.company_job_id
+        project_number = fetched.company_job_id
 
+        app.logger.debug(
+            'Successfully committed record: {0}'.format(
+                str(fetched)))
         session.close()
-        app.logger.debug('Successfully added record: {0}'.format(str(result)))
         return int(project_number)
 
     def create_company(self, company_id):

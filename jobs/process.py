@@ -30,13 +30,13 @@ class TWProjectPipeline(object):
         app.logger.debug('Ready to process project(s)')
 
     def process_project(self, data, session):
-        project = TWProject(**data)
+        a_project = TWProject(**data)
         try:
-            session.add(project)
+            session.add(a_project)
             session.commit()
         except SQLAlchemyError:
             app.logger.critical('Failed to commit Teamwork project ID to database: {0}'
-                                .format(str(project.tw_project_id)))
+                                .format(str(a_project.tw_project_id)))
             session.rollback()
         finally:
             session.close()
@@ -59,11 +59,11 @@ class TWProjectPipeline(object):
                     temp_company_job_id = re.search(
                         '^[0-9]+', temp_company_job_id).group(0)
 
-                    tw_data = dict(tw_project_id=tw_project_id,
-                                   company_abbr=temp_company_abbr,
-                                   company_job_id=int(temp_company_job_id))
+                    data = dict(tw_project_id=tw_project_id,
+                                company_abbr=temp_company_abbr,
+                                company_job_id=int(temp_company_job_id))
 
-                    self.process_project(tw_data, session)
+                    self.process_project(data, session)
         else:
             app.logger.critical('Could not retrieve project(s) from Teamwork.')
             abort(404)
