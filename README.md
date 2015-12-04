@@ -5,7 +5,7 @@ This project integrates our TeamworkPM and Harvest web applications. It syncs co
 ## Installation 
 With [Virtualenv](https://virtualenv.readthedocs.org/en/latest/), run:
 ```shell
-virtualenv teamwork-venv-2.7.10 && cd "$_" && source bin/activate
+$ virtualenv teamwork-venv-2.7.10 && cd "$_" && source bin/activate
 ```
 
 Configure ``settings_local.py`` + install app dependencies:

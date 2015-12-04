@@ -11,17 +11,19 @@ from webhook import app
 from webhook import Engine as engine
 from webhook import Session
 
+import time
+
 manager = Manager(app)
 
 
-def contains_records(session):
+def has_records(session):
     try:
         return session.query(TWProject).count() >= 1
     except ProgrammingError:
         return False
 
 
-def do_work(given, session):
+def run_setup(given, session):
     teamwork_pipeline = TWProjectPipeline(auto_drop=given)
     teamwork_pipeline.insert_projects(session)
 
@@ -30,15 +32,21 @@ def do_work(given, session):
 def db_setup(force=False):
     """Setup the Teamwork database"""
     session = Session()
-    if force and database_exists(engine.url) and contains_records(session):
+    allowed = [['y', 'Y', 'Yes', 'YES'], ['n', 'N', 'No', 'NO']]
+    if force and database_exists(engine.url) and has_records(session):
         if not prompt_bool('Are you sure you want to drop the existing table?',
-                           yes_choices=['y', 'Y', 'Yes', 'YES'],
-                           no_choices=['n', 'N', 'No', 'NO']):
+                           yes_choices=allowed[0], no_choices=allowed[1]):
             return
-        session.close() 
-        do_work(force, session)
+        session.commit()
+        print '...dropping DB...'
+        time.sleep(1)
+        run_setup(force, session)
+        session.close()
     else:
-        do_work(force, session)
+        print '...creating DB...'
+        time.sleep(1)
+        run_setup(force, session)
+        session.close()
 
 if __name__ == '__main__':
     manager.run()

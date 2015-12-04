@@ -23,6 +23,7 @@ app = Flask(__name__)
 Engine = connect_to_database()
 Session = sessionmaker(bind=Engine)
 
+
 @app.route("/", methods=['POST'])
 def post():
     app.logger.debug('Retrieved webhook')
