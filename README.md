@@ -10,14 +10,14 @@ virtualenv teamwork-venv-2.7.10 && cd "$_" && source bin/activate
 
 Configure ``settings_local.py`` + install app dependencies:
 ```shell
-settings='settings_local'
-cd src && pip install -r requirements.txt
-cp "${settings}.templ.py" "${settings}.py"
+$ settings='settings_local'
+$ cd src && pip install -r requirements.txt
+$ cp "${settings}.templ.py" "${settings}.py"
 ```
 
 Build the Teamwork database:
 ```shell
-python manage.py db_setup
+$ python manage.py db_setup
 ```
 
 ## Requirements
