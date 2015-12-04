@@ -1,15 +1,15 @@
 from flask import abort
 from flask import Flask
 
-from jobs.models import connect_to_database
-from jobs.models import create_database
 from jobs.models import TWProject
+from jobs.models import create_database
 
-from sqlalchemy import exc
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import SQLAlchemyError
 
 from teamwork import Teamwork
+
 from webhook import app
+from webhook import Engine as engine 
 
 import re
 import settings
@@ -19,14 +19,12 @@ class TWProjectPipeline(object):
 
     VALID_PROJECT_NAME = '^[0-9]{4}-[A-Z]+-[0-9]+ .*$'
 
-    def __init__(self):
+    def __init__(self, auto_drop=False):
         app.logger.debug('Kicking up the processor...')
         self.teamwork = Teamwork(settings.TEAMWORK_BASE_URL,
                                  settings.TEAMWORK_USER,
                                  settings.TEAMWORK_PASS)
-        engine = connect_to_database()
-        create_database(engine)
-        self.Session = sessionmaker(bind=engine)
+        create_database(engine, auto_drop=auto_drop)
         app.logger.debug('Ready to process project(s)')
 
     def process_project(self, data, session):
@@ -41,9 +39,8 @@ class TWProjectPipeline(object):
         finally:
             session.close()
 
-    def insert_projects(self):
+    def insert_projects(self, session):
         projects = self.teamwork.get_projects()
-        session = self.Session()
         if projects:
             for project in projects[Teamwork.PROJECTS]:
                 name = project[Teamwork.NAME]

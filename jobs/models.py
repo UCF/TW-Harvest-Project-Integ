@@ -38,12 +38,13 @@ def connect_to_database():
     return create_engine(settings.DB_STRING, echo=settings.DEBUG)
 
 
-def create_database(engine):
+def create_database(engine, auto_drop=False):
     """
     Setup the database (for deployment)
     """
-    Base.metadata.drop_all(bind=engine, checkfirst=True)
-    Base.metadata.create_all(engine)
+    if auto_drop is True:
+        Base.metadata.drop_all(bind=engine, checkfirst=True)
+    Base.metadata.create_all(engine, checkfirst=True)
 
 
 class TWProject(Base):

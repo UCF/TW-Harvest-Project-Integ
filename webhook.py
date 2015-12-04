@@ -7,8 +7,8 @@ from harvest import Harvest
 from jobs.models import connect_to_database
 from jobs.models import TWProject
 
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import SQLAlchemyError
 
 from teamwork import Teamwork
 
@@ -20,6 +20,8 @@ import sys
 
 app = Flask(__name__)
 
+Engine = connect_to_database()
+Session = sessionmaker(bind=Engine)
 
 @app.route("/", methods=['POST'])
 def post():
@@ -40,10 +42,6 @@ class TeamworkHandler(object):
         Initializes the handler
         """
         app.logger.debug('Initiating Handlers...')
-        engine = connect_to_database()
-        self.Session = sessionmaker()
-        self.Session.configure(bind=engine)
-
         self.teamwork = Teamwork(
             settings.TEAMWORK_BASE_URL,
             settings.TEAMWORK_USER,
@@ -348,7 +346,7 @@ class TeamworkHandler(object):
         :return: The assigned company_job_id for the project
         :rtype: int
         """
-        session = self.Session()
+        session = Session()
         data = dict(tw_project_id=tw_project_id,
                     company_abbr=company_abbr)
         record = TWProject(**data)
