@@ -8,6 +8,8 @@ from sqlalchemy import create_engine
 from sqlalchemy import UniqueConstraint
 from sqlalchemy import sql
 
+from sqlalchemy.engine.url import URL
+
 from sqlalchemy.ext.declarative import declarative_base
 
 import settings
@@ -35,15 +37,16 @@ def connect_to_database():
         >>> engine = connect_to_database()
         >>> create_database(engine)
     """
-    return create_engine(settings.DB_STRING, echo=settings.DEBUG)
+    return create_engine(URL(**settings.DATABASE), echo=settings.DEBUG)
 
 
-def create_database(engine, auto_drop=False):
+def create_or_drop(engine, auto_drop=False):
     """
-    Setup the database (for deployment)
+    Create table, or drop pre-existing table
     """
     if auto_drop is True:
         Base.metadata.drop_all(bind=engine, checkfirst=True)
+        return
     Base.metadata.create_all(engine, checkfirst=True)
 
 

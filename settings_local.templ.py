@@ -19,5 +19,12 @@ HARVEST_BASE_URL = 'https://foo.harvestapp.com/'
 HARVEST_USER = ''
 HARVEST_PASS = ''
 
-#  db Engine Setup
-DB_STRING = 'sqlite:///test.db'
+# Teamwork database config
+DATABASE = {
+  'drivername':   '',
+  'host':         '',
+  'port':         '',
+  'username':     '',
+  'password':     '',
+  'database':     ''
+}

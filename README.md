@@ -2,10 +2,10 @@
 
 This project integrates our TeamworkPM and Harvest web applications. It syncs companies, project names, people assigned, and time spent on projects.
 
-## Installation 
+## Setup 
 With [Virtualenv](https://virtualenv.readthedocs.org/en/latest/), run:
 ```shell
-$ virtualenv teamwork-venv-2.7.10 && cd "$_" && source bin/activate
+$ virtualenv teamwork-venv-2.6.6 && cd "$_" && source bin/activate
 ```
 
 Configure ``settings_local.py`` + install app dependencies:
@@ -17,7 +17,7 @@ $ cp "${settings}.templ.py" "${settings}.py"
 
 Build the Teamwork database:
 ```shell
-$ python manage.py db_setup
+$ python manage.py create_db
 ```
 
 ## Requirements
