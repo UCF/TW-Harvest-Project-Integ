@@ -21,7 +21,7 @@ manager = Manager(app)
 
 def has_records(session):
     """
-    Determine if the Teamwork database contains rows
+    Determine if the table ``tw_project`` contains rows
     """
     try:
         return session.query(TWProject).count() >= 1

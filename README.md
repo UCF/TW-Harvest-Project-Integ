@@ -17,8 +17,13 @@ $ cp "${settings}.templ.py" "${settings}.py"
 
 Build the Teamwork database:
 ```shell
-$ python manage.py create_db
+$ python manage.py setup_db
 ```
+
+## Webhook Info
+Note -- ``webhook.py`` is triggered by two events:
+* PROJECT.CREATED
+* PROJECT.UPDATED
 
 ## Requirements
 Python 2.7
