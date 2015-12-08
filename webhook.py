@@ -98,7 +98,7 @@ class TeamworkHandler(object):
                     tw_project_id)
         except KeyError:
             app.logger.exception(
-                'Could no update project with TeamworkPM ID of ' +
+                'Could not update project with TeamworkPM ID of ' +
                 tw_project_id)
 
     def update_project(self, tw_project):
@@ -240,7 +240,7 @@ class TeamworkHandler(object):
                     project_name)
         except KeyError:
             app.logger.exception(
-                'Could no update project users for project name ' +
+                'Could not update project users for project name ' +
                 project_name)
 
     def get_tw_project_emails(self, project_id):
