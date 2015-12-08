@@ -1,6 +1,10 @@
 Flask==0.9
+Flask-Script==2.0.5
 Jinja2==2.7.3
 MarkupSafe==0.23
-Werkzeug==0.9.6
+MySQL-python==1.2.5
 requests==1.1.0
-wsgiref==0.1.2
+six==1.10.0
+SQLAlchemy==1.0.9
+SQLAlchemy-Utils==0.31.3
+Werkzeug==0.9.6

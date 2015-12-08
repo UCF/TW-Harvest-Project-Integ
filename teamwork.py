@@ -33,7 +33,7 @@ class Teamwork(object):
     COMPANIES_URL = '/companies'
     COMPANY = 'company'
     PHONE = 'phone'
-    ADDRESS_ONE = 'address_one'
+    COMPANY_ABBR = 'address_one'
 
     PEOPLE = 'people'
     PERSON = 'person'
