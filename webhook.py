@@ -340,7 +340,7 @@ class TeamworkHandler(object):
         return project_name
 
     def get_project_number(self, company_abbr, tw_project_id):
-        """Assigns a company_job_id for the project
+        """Assigns a company_job_id for the Teamwork project
 
         :param company_abbr: Company abbreviation
         :param tw_project_id: Project ID

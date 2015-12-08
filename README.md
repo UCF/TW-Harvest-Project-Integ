@@ -21,7 +21,7 @@ $ python manage.py setup_db
 ```
 
 ## Webhook Info
-Note -- ``webhook.py`` is triggered by two events:
+Note -- ``webhook.py`` is triggered on POST by two events:
 * PROJECT.CREATED
 * PROJECT.UPDATED
 

@@ -31,7 +31,9 @@ def has_records(session):
 
 @manager.command
 def setup_db():
-    """Setup the Teamwork database"""
+    """
+    Setup the Teamwork database with records
+    """
     session = Session()
 
     teamwork_pipeline = TWProjectPipeline()
@@ -43,7 +45,9 @@ def setup_db():
 
 @manager.command
 def drop_table():
-    """Drop Teamwork records if any"""
+    """
+    Drop ``tw_project`` table if database exists and has records
+    """
     session = Session()
     allowed = [['y', 'Y', 'Yes', 'YES'], ['n', 'N', 'No', 'NO']]
 
