@@ -34,8 +34,6 @@ def post():
 
 class TeamworkHandler(object):
 
-    PROJ_NAME_PATTERN = "^[0-9]{4}-[A-Z]+-[0-9]+ .*$"
-
     def __init__(self):
         """
         Initializes the handler
