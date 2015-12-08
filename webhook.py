@@ -27,8 +27,6 @@ Session = sessionmaker(bind=Engine)
 @app.route("/", methods=['POST'])
 def post():
     app.logger.debug('Retrieved webhook')
-    logging.info('test!!!!')
-
     teamwork_handler = TeamworkHandler()
     teamwork_handler.process_request(request)
     return "Thankyou!"
@@ -87,7 +85,7 @@ class TeamworkHandler(object):
             if tw_project is not None:
                 project_name = tw_project[Teamwork.PROJECT][Teamwork.NAME]
                 if not re.match(
-                        TeamworkHandler.PROJ_NAME_PATTERN, project_name):
+                        settings.TEAMWORK_PROJECT_NAME_SCHEME, project_name):
                     app.logger.debug('Webhook project create')
                     self.create_project(tw_project)
                 else:

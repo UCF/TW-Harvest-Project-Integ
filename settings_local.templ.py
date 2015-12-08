@@ -19,6 +19,9 @@ HARVEST_BASE_URL = 'https://foo.harvestapp.com/'
 HARVEST_USER = ''
 HARVEST_PASS = ''
 
+# Teamwork project name format
+TEAMWORK_PROJECT_NAME_SCHEME = '^[0-9]{4}-[A-Z]+-[0-9]+ .*$'
+
 # Teamwork database config
 DATABASE = {
   'drivername':   '',

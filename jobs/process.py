@@ -15,8 +15,6 @@ import settings
 
 class TWProjectPipeline(object):
 
-    VALID_PROJECT_NAME = '^[0-9]{4}-[A-Z]+-[0-9]+ .*$'
-
     def __init__(self):
         app.logger.debug('Kicking up the processor...')
         self.teamwork = Teamwork(settings.TEAMWORK_BASE_URL,
@@ -43,7 +41,7 @@ class TWProjectPipeline(object):
                 name = project[Teamwork.NAME]
                 tw_project_id = project[Teamwork.ID]
 
-                if re.match(TWProjectPipeline.VALID_PROJECT_NAME,
+                if re.match(settings.TEAMWORK_PROJECT_NAME_SCHEME,
                             name) != None:
                     temp_company_abbr = re.sub('^[0-9]{4}-', '', name)
                     temp_company_abbr = re.sub(
