@@ -56,6 +56,7 @@ class TWProjectPipeline(object):
                                 company_job_id=int(temp_company_job_id))
 
                     self.process_project(data, session)
+            app.logger.debug('Finished inserting Teamwork projects')
         else:
             app.logger.critical('Could not retrieve project(s) from Teamwork.')
             abort(404)

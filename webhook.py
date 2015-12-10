@@ -2,6 +2,9 @@ from flask import abort
 from flask import Flask
 from flask import request
 
+from logging import handlers
+from logging import Formatter
+
 from harvest import Harvest
 
 from jobs.models import connect_to_database
@@ -19,6 +22,13 @@ import settings
 import sys
 
 app = Flask(__name__)
+
+
+log_handler = handlers.TimedRotatingFileHandler(settings.LOG_LOCATION, when=settings.LOG_ROTATE, interval=1, backupCount=3)
+log_handler.setFormatter(Formatter(settings.LOG_TEXT_FMT, datefmt=settings.LOG_DATE_FMT))
+log_handler.setLevel(settings.LOG_LVL)
+app.logger.setLevel(settings.LOG_LVL)
+app.logger.addHandler(log_handler)
 
 Engine = connect_to_database()
 Session = sessionmaker(bind=Engine)

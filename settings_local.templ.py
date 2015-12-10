@@ -4,6 +4,8 @@ DEBUG = False
 LOG_LVL = logging.DEBUG
 LOG_LOCATION = ''
 LOG_ROTATE = 'midnight'
+LOG_TEXT_FMT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+LOG_DATE_FMT = '%Y-%m-%d %H:%M:%S' 
 
 # the base url for teamwork (include ending slash)
 TEAMWORK_BASE_URL = 'http://foo.teamworkpm.net/'

@@ -25,7 +25,7 @@ def create_tables(recreate):
 
     if not database_exists(engine.url):
         app.logger.error(
-            'Error: manage.py:create_tables() failed, database not found.')
+            'manage.py:create_tables() failed, database not found.')
         print 'Error: database not found.'
         return False
 
@@ -34,17 +34,17 @@ def create_tables(recreate):
             Base.metadata.drop_all(bind=engine, checkfirst=True)
             Base.metadata.create_all(engine, checkfirst=True)
             app.logger.debug(
-                'Info: manage.py:create_tables(), tables recreated.')
+                'manage.py:create_tables(), tables recreated.')
             return True
         else:
             print 'tables already exist, use: "--recreate" to re-create tables'
-            app.logger.debug(
-                'Info: manage.py:create_tables(), tables found, table recreation is disabled.')
+            app.logger.warning(
+                'manage.py:create_tables(), tables found, table recreation is disabled.')
             return False
     else:
         Base.metadata.create_all(engine, checkfirst=True)
         app.logger.debug(
-            'Info: manage.py:create_tables(), no tables found, tables created.')
+            'manage.py:create_tables(), no tables found, tables created.')
         return True
 
 
@@ -60,8 +60,8 @@ def setup_db(recreate=False):
         teamwork_pipeline.insert_projects(session)
         session.close()
     else:
-        app.logger.error(
-            'Error: manage.py:create_tables() failed, insert_projects aborted.')
+        app.logger.warning(
+            'manage.py:create_tables() failed, insert_projects aborted.')
         print 'insert_projects aborted due to database/table status'
         session.close()
 
