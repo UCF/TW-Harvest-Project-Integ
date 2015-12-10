@@ -35,7 +35,6 @@ def connect_to_database():
     Example:
         >>> from jobs.models import *
         >>> engine = connect_to_database()
-        >>> create_database(engine)
     """
     return create_engine(URL(**settings.DATABASE), echo=settings.DEBUG)
 
