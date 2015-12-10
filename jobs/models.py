@@ -40,16 +40,6 @@ def connect_to_database():
     return create_engine(URL(**settings.DATABASE), echo=settings.DEBUG)
 
 
-def create_or_drop(engine, auto_drop=False):
-    """
-    Create table, or drop pre-existing table
-    """
-    if auto_drop is True:
-        Base.metadata.drop_all(bind=engine, checkfirst=True)
-        return
-    Base.metadata.create_all(engine, checkfirst=True)
-
-
 class TWProject(Base):
 
     __table__ = Table('tw_project', Base.metadata,
