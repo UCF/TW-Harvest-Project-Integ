@@ -24,9 +24,17 @@ import sys
 app = Flask(__name__)
 
 
-log_handler = handlers.TimedRotatingFileHandler(settings.LOG_LOCATION, when=settings.LOG_ROTATE, interval=1, backupCount=3)
-log_handler.setFormatter(Formatter(settings.LOG_TEXT_FMT, datefmt=settings.LOG_DATE_FMT))
+log_handler = handlers.TimedRotatingFileHandler(
+    settings.LOG_LOCATION,
+    when=settings.LOG_ROTATE,
+    interval=1,
+    backupCount=3)
+log_handler.setFormatter(
+    Formatter(
+        settings.LOG_TEXT_FMT,
+        datefmt=settings.LOG_DATE_FMT))
 log_handler.setLevel(settings.LOG_LVL)
+
 app.logger.setLevel(settings.LOG_LVL)
 app.logger.addHandler(log_handler)
 
