@@ -11,6 +11,7 @@ from webhook import app
 from webhook import Engine as engine
 from webhook import Session
 
+import sys
 
 manager = Manager(app)
 
@@ -26,26 +27,25 @@ def create_tables(recreate):
     if not database_exists(engine.url):
         app.logger.error(
             'manage.py:create_tables() failed, database not found.')
-        print 'Error: database not found.'
-        return False
+        raise Exception('database not found')
 
     if has_tables():
         if recreate:
+            sys.stdout.write('re-creating Teamwork tables...' + '\n')
             Base.metadata.drop_all(bind=engine, checkfirst=True)
             Base.metadata.create_all(engine, checkfirst=True)
             app.logger.debug(
-                'manage.py:create_tables(), tables recreated.')
-            return True
+                'manage.py:create_tables(), tables re-created.')
+            return
         else:
-            print 'tables already exist, use: "--recreate" to re-create tables'
             app.logger.warning(
                 'manage.py:create_tables(), tables found, table recreation is disabled.')
-            return False
+            raise Exception('tables already exist, use: "--recreate" to re-create tables' + '\n')
     else:
         Base.metadata.create_all(engine, checkfirst=True)
+        sys.stdout.write('creating tables' + '\n')
         app.logger.debug(
             'manage.py:create_tables(), no tables found, tables created.')
-        return True
 
 
 @manager.command
@@ -54,15 +54,15 @@ def setup_db(recreate=False):
     Setup the Teamwork database with records
     """
     session = Session()
-
-    if create_tables(recreate):
+    try:
+        create_tables(recreate)
         teamwork_pipeline = TWProjectPipeline()
         teamwork_pipeline.insert_projects(session)
         session.close()
-    else:
+    except Exception as error:
+        print 'Error: {0}'.format(error)
         app.logger.warning(
             'manage.py:create_tables() failed, insert_projects aborted.')
-        print 'insert_projects aborted due to database/table status'
         session.close()
 
 if __name__ == '__main__':
