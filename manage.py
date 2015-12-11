@@ -1,65 +1,69 @@
 from flask.ext.script import Manager
-from flask.ext.script import prompt_bool
 
-from jobs.models import TWProject
-from jobs.models import create_or_drop
+from jobs.models import Base
 
 from jobs.process import TWProjectPipeline
 
-from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.engine import reflection
 from sqlalchemy_utils import database_exists
 
 from webhook import app
 from webhook import Engine as engine
 from webhook import Session
 
-import time
 import sys
 
 manager = Manager(app)
 
 
-def has_records(session):
-    """
-    Determine if the table ``tw_project`` contains rows
-    """
-    try:
-        return session.query(TWProject).count() >= 1
-    except ProgrammingError:
-        return False
+def has_tables():
+    inspector = reflection.Inspector.from_engine(engine)
+    return any(inspector.get_table_names())
+
+
+def create_tables(recreate):
+    session = Session()
+
+    if not database_exists(engine.url):
+        app.logger.error(
+            'manage.py:create_tables() failed, database not found.')
+        raise Exception('database not found')
+
+    if has_tables():
+        if recreate:
+            sys.stdout.write('re-creating Teamwork tables...' + '\n')
+            Base.metadata.drop_all(bind=engine, checkfirst=True)
+            Base.metadata.create_all(engine, checkfirst=True)
+            app.logger.debug(
+                'manage.py:create_tables(), tables re-created.')
+            return
+        else:
+            app.logger.warning(
+                'manage.py:create_tables(), tables found, table recreation is disabled.')
+            raise Exception('tables already exist, use: "--recreate" to re-create tables' + '\n')
+    else:
+        Base.metadata.create_all(engine, checkfirst=True)
+        sys.stdout.write('creating tables' + '\n')
+        app.logger.debug(
+            'manage.py:create_tables(), no tables found, tables created.')
 
 
 @manager.command
-def setup_db():
+def setup_db(recreate=False):
     """
     Setup the Teamwork database with records
     """
     session = Session()
-
-    teamwork_pipeline = TWProjectPipeline()
-    create_or_drop(engine)
-    teamwork_pipeline.insert_projects(session)
-
-    session.close()
-
-
-@manager.command
-def drop_table():
-    """
-    Drop ``tw_project`` table if database exists and has records
-    """
-    session = Session()
-    allowed = [['y', 'Y', 'Yes', 'YES'], ['n', 'N', 'No', 'NO']]
-
-    if database_exists(engine.url) and has_records(session):
-        if not prompt_bool('Are you sure you want to drop the existing table?',
-                           yes_choices=allowed[0], no_choices=allowed[1]):
-            return
-        session.commit()
-        create_or_drop(engine, auto_drop=True)
+    try:
+        create_tables(recreate)
+        teamwork_pipeline = TWProjectPipeline()
+        teamwork_pipeline.insert_projects(session)
         session.close()
-    else:
-        print 'No database found.'
+    except Exception as error:
+        print 'Error: {0}'.format(error)
+        app.logger.warning(
+            'manage.py:create_tables() failed, insert_projects aborted.')
+        session.close()
 
 if __name__ == '__main__':
     manager.run()

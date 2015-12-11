@@ -56,6 +56,9 @@ class TWProjectPipeline(object):
                                 company_job_id=int(temp_company_job_id))
 
                     self.process_project(data, session)
+
+            project_count = int(session.query(TWProject).count())
+            app.logger.debug('Done. Added {0} project(s) to database'.format(project_count))
         else:
             app.logger.critical('Could not retrieve project(s) from Teamwork.')
             abort(404)
