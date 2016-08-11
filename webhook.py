@@ -47,7 +47,7 @@ def post():
     app.logger.debug('Retrieved webhook')
     teamwork_handler = TeamworkHandler()
     teamwork_handler.process_request(request)
-    return "Thankyou!"
+    return "Thank you!"
 
 
 class TeamworkHandler(object):
@@ -80,7 +80,7 @@ class TeamworkHandler(object):
             app.logger.debug('val: ' + val)
 
         event = post_values[Teamwork.EVENT]
-        app.logger.info('Recieved event type: ' + event)
+        app.logger.info('Received event type: ' + event)
 
         if event == Teamwork.PROJECT_CREATED or event == Teamwork.PROJECT_UPDATED:
             self.set_project_code(post_values[Teamwork.OBJECT_ID])
@@ -143,7 +143,7 @@ class TeamworkHandler(object):
                 new_project_name = self.update_project_name(project_name, new_company_abbr,
                                                             tw_project[Teamwork.PROJECT][Teamwork.ID])
             else:
-                # Do nothing otherwise run into an infinate loop situation
+                # Do nothing otherwise run into an infinite loop situation
                 app.logger.debug(
                     'Project name does not need to be updated ' +
                     project_name)
