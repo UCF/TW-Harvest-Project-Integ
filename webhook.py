@@ -47,7 +47,7 @@ def post():
     app.logger.debug('Retrieved webhook')
     teamwork_handler = TeamworkHandler()
     teamwork_handler.process_request(request)
-    return "Thankyou!"
+    return "Thank you!"
 
 
 class TeamworkHandler(object):
@@ -80,9 +80,9 @@ class TeamworkHandler(object):
             app.logger.debug('val: ' + val)
 
         event = post_values[Teamwork.EVENT]
-        app.logger.info('Recieved event type: ' + event)
+        app.logger.info('Received event type: ' + event)
 
-        if event == Teamwork.PROJECT_CREATED or event == Teamwork.PROJECT_UPDATED:
+        if event == Teamwork.PROJECT_CREATED or event == Teamwork.PROJECT_UPDATED or event == teamwork.PROJECT.COPIED:
             self.set_project_code(post_values[Teamwork.OBJECT_ID])
         elif event == Teamwork.COMPANY_CREATED:
             self.create_company(post_values[Teamwork.OBJECT_ID])
@@ -96,13 +96,14 @@ class TeamworkHandler(object):
 
         :param tw_project_id: The ID of the project
         """
+        session = Session()
         try:
             tw_project = self.teamwork.get_project(tw_project_id)
             if tw_project is not None:
                 project_name = tw_project[Teamwork.PROJECT][Teamwork.NAME]
-                if not re.match(
-                        settings.TEAMWORK_PROJECT_NAME_SCHEME, project_name):
-                    app.logger.debug('Webhook project create')
+                q = session.query(TWProject).filter(TWProject.tw_project_id == tw_project_id)
+                if not session.query(q.exists()).scalar()
+                    app.logger.debug('Webhook project create or copied')
                     self.create_project(tw_project)
                 else:
                     app.logger.debug('Webhook project update')
@@ -116,6 +117,8 @@ class TeamworkHandler(object):
             app.logger.exception(
                 'Could not update project with TeamworkPM ID of ' +
                 tw_project_id)
+        finally:
+            session.close()
 
     def update_project(self, tw_project):
         """Updates the project in TeamworkPM and Harvest
@@ -143,7 +146,7 @@ class TeamworkHandler(object):
                 new_project_name = self.update_project_name(project_name, new_company_abbr,
                                                             tw_project[Teamwork.PROJECT][Teamwork.ID])
             else:
-                # Do nothing otherwise run into an infinate loop situation
+                # Do nothing otherwise run into an infinite loop situation
                 app.logger.debug(
                     'Project name does not need to be updated ' +
                     project_name)
@@ -312,6 +315,10 @@ class TeamworkHandler(object):
                 project_name +
                 ' for client ' +
                 company_abbr)
+            # Remove Teamwork project name prefix if it exists
+            if re.match(
+                settings.TEAMWORK_PROJECT_NAME_SCHEME, project_name):
+                project_name = re.sub(r'^[0-9]{4}-[A-Z]+-[0-9]+', '', project_name, count=1).lstrip()
 
             # Update Teamwork project with new name
             new_project_name = self.add_project_prefix(
