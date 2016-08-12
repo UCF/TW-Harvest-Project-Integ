@@ -82,7 +82,7 @@ class TeamworkHandler(object):
         event = post_values[Teamwork.EVENT]
         app.logger.info('Received event type: ' + event)
 
-        if event == Teamwork.PROJECT_CREATED or event == Teamwork.PROJECT_UPDATED or event == teamwork.PROJECT.COPIED:
+        if event == Teamwork.PROJECT_CREATED or event == Teamwork.PROJECT_UPDATED or event == Teamwork.PROJECT_COPIED:
             self.set_project_code(post_values[Teamwork.OBJECT_ID])
         elif event == Teamwork.COMPANY_CREATED:
             self.create_company(post_values[Teamwork.OBJECT_ID])
@@ -102,7 +102,7 @@ class TeamworkHandler(object):
             if tw_project is not None:
                 project_name = tw_project[Teamwork.PROJECT][Teamwork.NAME]
                 q = session.query(TWProject).filter(TWProject.tw_project_id == tw_project_id)
-                if not session.query(q.exists()).scalar()
+                if not session.query(q.exists()).scalar():
                     app.logger.debug('Webhook project create or copied')
                     self.create_project(tw_project)
                 else:
