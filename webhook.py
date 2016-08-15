@@ -131,8 +131,7 @@ class TeamworkHandler(object):
                 Teamwork.PROJECT][
                 Teamwork.COMPANY][
                 Teamwork.ID])
-        new_project_name = project_name
-
+        
         # Update project name if a valid Teamwork Company is provided otherwise
         # do nothing
         if Teamwork.COMPANY in tw_company and Teamwork.COMPANY_ABBR in tw_company[
@@ -140,22 +139,31 @@ class TeamworkHandler(object):
             new_company_abbr = tw_company[
                 Teamwork.COMPANY][
                 Teamwork.COMPANY_ABBR]
+            tw_project_id = tw_project[Teamwork.PROJECT][Teamwork.ID]
             if not re.match(
                 settings.TEAMWORK_PROJECT_NAME_SCHEME, project_name):
-                self.update_project_name(project_name, new_company_abbr,
-                                         tw_project[Teamwork.PROJECT][Teamwork.ID])
-                return
-                
-            company_abbr = re.sub("^[0-9]{4}-", "", project_name)
-            company_abbr = re.sub("-[0-9]+ .*$", "", company_abbr)
-            if new_company_abbr != company_abbr:
-                new_project_name = self.update_project_name(project_name, new_company_abbr,
-                                                            tw_project[Teamwork.PROJECT][Teamwork.ID])
-            else:
-                # Do nothing otherwise run into an infinite loop situation
                 app.logger.debug(
-                    'Project name does not need to be updated ' +
-                    project_name)
+                        'Project name does not match schema ' +
+                        project_name)
+                new_project_name = self.add_project_prefix(project_name, new_company_abbr,
+                                                           tw_project_id)
+                # Update Teamwork project
+                self.teamwork.update_project(new_project_name, tw_project_id)
+                app.logger.debug(
+                        'Project schema appended to name ' +
+                        new_project_name)
+            else:
+                new_project_name = project_name
+                company_abbr = re.sub("^[0-9]{4}-", "", project_name)
+                company_abbr = re.sub("-[0-9]+ .*$", "", company_abbr)
+                if new_company_abbr != company_abbr:
+                    new_project_name = self.update_project_name(project_name, new_company_abbr,
+                                                                tw_project_id)
+                else:
+                    # Do nothing otherwise run into an infinite loop situation
+                    app.logger.debug(
+                        'Project name does not need to be updated ' +
+                        project_name)
 
             self.update_project_users(
                 new_project_name, tw_project[
