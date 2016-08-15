@@ -140,6 +140,12 @@ class TeamworkHandler(object):
             new_company_abbr = tw_company[
                 Teamwork.COMPANY][
                 Teamwork.COMPANY_ABBR]
+            if not re.match(
+                settings.TEAMWORK_PROJECT_NAME_SCHEME, project_name):
+                self.update_project_name(project_name, new_company_abbr,
+                                         tw_project[Teamwork.PROJECT][Teamwork.ID])
+                return
+                
             company_abbr = re.sub("^[0-9]{4}-", "", project_name)
             company_abbr = re.sub("-[0-9]+ .*$", "", company_abbr)
             if new_company_abbr != company_abbr:
@@ -155,6 +161,7 @@ class TeamworkHandler(object):
                 new_project_name, tw_project[
                     Teamwork.PROJECT][
                     Teamwork.ID])
+
 
     def update_project_name(self, project_name, company_abbr, tw_project_id):
         """Update the project name in TeamworkPM and Harvest
