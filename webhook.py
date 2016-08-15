@@ -101,7 +101,8 @@ class TeamworkHandler(object):
             tw_project = self.teamwork.get_project(tw_project_id)
             if tw_project is not None:
                 project_name = tw_project[Teamwork.PROJECT][Teamwork.NAME]
-                q = session.query(TWProject).filter(TWProject.tw_project_id == tw_project_id)
+                q = session.query(TWProject).filter(
+                    TWProject.tw_project_id == tw_project_id)
                 if not session.query(q.exists()).scalar():
                     app.logger.debug('Webhook project create or copied')
                     self.create_project(tw_project)
@@ -131,7 +132,7 @@ class TeamworkHandler(object):
                 Teamwork.PROJECT][
                 Teamwork.COMPANY][
                 Teamwork.ID])
-        
+
         # Update project name if a valid Teamwork Company is provided otherwise
         # do nothing
         if Teamwork.COMPANY in tw_company and Teamwork.COMPANY_ABBR in tw_company[
@@ -141,17 +142,17 @@ class TeamworkHandler(object):
                 Teamwork.COMPANY_ABBR]
             tw_project_id = tw_project[Teamwork.PROJECT][Teamwork.ID]
             if not re.match(
-                settings.TEAMWORK_PROJECT_NAME_SCHEME, project_name):
+                    settings.TEAMWORK_PROJECT_NAME_SCHEME, project_name):
                 app.logger.debug(
-                        'Project name does not match schema ' +
-                        project_name)
+                    'Project name does not match schema ' +
+                    project_name)
                 new_project_name = self.add_project_prefix(project_name, new_company_abbr,
                                                            tw_project_id)
                 # Update Teamwork project
                 self.teamwork.update_project(new_project_name, tw_project_id)
                 app.logger.debug(
-                        'Project schema appended to name ' +
-                        new_project_name)
+                    'Project schema appended to name ' +
+                    new_project_name)
             else:
                 new_project_name = project_name
                 company_abbr = re.sub("^[0-9]{4}-", "", project_name)
@@ -169,7 +170,6 @@ class TeamworkHandler(object):
                 new_project_name, tw_project[
                     Teamwork.PROJECT][
                     Teamwork.ID])
-
 
     def update_project_name(self, project_name, company_abbr, tw_project_id):
         """Update the project name in TeamworkPM and Harvest
@@ -332,8 +332,12 @@ class TeamworkHandler(object):
                 company_abbr)
             # Remove Teamwork project name prefix if it exists
             if re.match(
-                settings.TEAMWORK_PROJECT_NAME_SCHEME, project_name):
-                project_name = re.sub(r'^[0-9]{4}-[A-Z]+-[0-9]+', '', project_name, count=1).lstrip()
+                    settings.TEAMWORK_PROJECT_NAME_SCHEME, project_name):
+                project_name = re.sub(
+                    r'^[0-9]{4}-[A-Z]+-[0-9]+',
+                    '',
+                    project_name,
+                    count=1).lstrip()
 
             # Update Teamwork project with new name
             new_project_name = self.add_project_prefix(

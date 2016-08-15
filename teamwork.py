@@ -64,7 +64,8 @@ class Teamwork(object):
         :return: The project
         :rtype: dict
         """
-        return self.get_request(self.base_url + Teamwork.PROJECTS_URL + Teamwork.REQ_TYPE + '?status=ALL', True, Teamwork.PROJECTS)
+        return self.get_request(self.base_url + Teamwork.PROJECTS_URL +
+                                Teamwork.REQ_TYPE + '?status=ALL', True, Teamwork.PROJECTS)
 
     def get_project(self, id):
         """Retrieves project based on the ID
@@ -73,7 +74,8 @@ class Teamwork(object):
         :return: The project
         :rtype: dict
         """
-        return self.get_request(self.base_url + Teamwork.PROJECTS_URL + '/' + id + Teamwork.REQ_TYPE)
+        return self.get_request(
+            self.base_url + Teamwork.PROJECTS_URL + '/' + id + Teamwork.REQ_TYPE)
 
     def get_project_by_name(self, name):
         """Retrieves project by name
@@ -95,7 +97,8 @@ class Teamwork(object):
         :param id: Project ID
         """
         data = {Teamwork.PROJECT: {Teamwork.NAME: project_name}}
-        return self.put_request(self.base_url + Teamwork.PROJECTS_URL + '/' + id + Teamwork.REQ_TYPE, data)
+        return self.put_request(
+            self.base_url + Teamwork.PROJECTS_URL + '/' + id + Teamwork.REQ_TYPE, data)
 
     def get_company(self, id):
         """Retrieves the company based on the ID
@@ -104,7 +107,8 @@ class Teamwork(object):
         :return: The company
         :rtype: dict
         """
-        return self.get_request(self.base_url + Teamwork.COMPANIES_URL + '/' + id + Teamwork.REQ_TYPE)
+        return self.get_request(
+            self.base_url + Teamwork.COMPANIES_URL + '/' + id + Teamwork.REQ_TYPE)
 
     def get_project_people(self, project_id):
         """Get people assigned to a project
@@ -183,11 +187,16 @@ class Teamwork(object):
                         is_more_pages = False
                     else:
                         # Get the next page url
-                        url = (url.replace('&page=%d' % page, '')) if 'page' in url else url
+                        url = (
+                            url.replace(
+                                '&page=%d' %
+                                page,
+                                '')) if 'page' in url else url
                         url = url + '&page=' + str(page + 1)
 
                 except KeyError:
-                    logging.error('Could not find X-Page or X-Pages in the response headers')
+                    logging.error(
+                        'Could not find X-Page or X-Pages in the response headers')
                     return None
 
         return json
