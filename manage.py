@@ -40,7 +40,8 @@ def create_tables(recreate):
         else:
             app.logger.warning(
                 'manage.py:create_tables(), tables found, table recreation is disabled.')
-            raise Exception('tables already exist, use: "--recreate" to re-create tables' + '\n')
+            raise Exception(
+                'tables already exist, use: "--recreate" to re-create tables' + '\n')
     else:
         Base.metadata.create_all(engine, checkfirst=True)
         sys.stdout.write('creating tables' + '\n')

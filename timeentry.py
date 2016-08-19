@@ -11,14 +11,21 @@ def main():
 class TimeImport():
 
     def __init__(self):
-        self.teamwork = Teamwork(settings.TEAMWORK_BASE_URL, settings.TEAMWORK_USER, settings.TEAMWORK_PASS)
-        self.harvest = Harvest(settings.HARVEST_BASE_URL, settings.HARVEST_USER, settings.HARVEST_PASS)
+        self.teamwork = Teamwork(
+            settings.TEAMWORK_BASE_URL,
+            settings.TEAMWORK_USER,
+            settings.TEAMWORK_PASS)
+        self.harvest = Harvest(
+            settings.HARVEST_BASE_URL,
+            settings.HARVEST_USER,
+            settings.HARVEST_PASS)
 
         updated_projects = self.harvest.get_todays_updated_projects()
 
         for project in updated_projects:
             h_project_id = project[Harvest.PROJECT][Harvest.ID]
-            time_entries = self.harvest.get_todays_proj_time_entries(h_project_id)
+            time_entries = self.harvest.get_todays_proj_time_entries(
+                h_project_id)
 
             project_name = project[Harvest.PROJECT][Harvest.NAME]
             tw_project = self.teamwork.get_project_by_name(project_name)
@@ -32,7 +39,10 @@ class TimeImport():
 
                 for tw_id, tw_email in tw_project_emails.iteritems():
                     if user_email.lower() == tw_email.lower():
-                        self.teamwork.add_time_entry(tw_project_id, tw_id, entry[Harvest.DAY_ENTRY][Harvest.HOURS], True)
+                        self.teamwork.add_time_entry(
+                            tw_project_id, tw_id, entry[
+                                Harvest.DAY_ENTRY][
+                                Harvest.HOURS], True)
                         break
 
                 time.sleep(1)

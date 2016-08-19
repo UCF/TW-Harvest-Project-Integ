@@ -42,7 +42,7 @@ class TWProjectPipeline(object):
                 tw_project_id = project[Teamwork.ID]
 
                 if re.match(settings.TEAMWORK_PROJECT_NAME_SCHEME,
-                            name) != None:
+                            name) is not None:
                     temp_company_abbr = re.sub('^[0-9]{4}-', '', name)
                     temp_company_abbr = re.sub(
                         '-[0-9]+ .*$', '', temp_company_abbr)
@@ -58,7 +58,8 @@ class TWProjectPipeline(object):
                     self.process_project(data, session)
 
             project_count = int(session.query(TWProject).count())
-            app.logger.debug('Done. Added {0} project(s) to database'.format(project_count))
+            app.logger.debug(
+                'Done. Added {0} project(s) to database'.format(project_count))
         else:
             app.logger.critical('Could not retrieve project(s) from Teamwork.')
             abort(404)

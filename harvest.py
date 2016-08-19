@@ -94,7 +94,8 @@ class Harvest(object):
         :rtype: str
         """
         data = {Harvest.CLIENT: {Harvest.NAME: name}}
-        location = self.put_request(self.base_url + Harvest.CLIENT_URL + '/' + id, data)
+        location = self.put_request(
+            self.base_url + Harvest.CLIENT_URL + '/' + id, data)
 
         if location is None:
             return location
@@ -115,7 +116,8 @@ class Harvest(object):
         :return: Projects
         :rtype: dict
         """
-        return self.get_request(self.base_url + Harvest.PROJECTS_URL + '/' + project_id)
+        return self.get_request(
+            self.base_url + Harvest.PROJECTS_URL + '/' + project_id)
 
     def get_project_by_name(self, name):
         """Retrieves project by name
@@ -150,8 +152,16 @@ class Harvest(object):
         :return: Project ID
         :rtype: str
         """
-        data = {Harvest.PROJECT: {Harvest.NAME: name, Harvest.CLIENT_ID: client_id}}
-        location = self.put_request(self.base_url + Harvest.PROJECTS_URL + '/' + str(project_id), data)
+        data = {
+            Harvest.PROJECT: {
+                Harvest.NAME: name,
+                Harvest.CLIENT_ID: client_id}}
+        location = self.put_request(
+            self.base_url +
+            Harvest.PROJECTS_URL +
+            '/' +
+            str(project_id),
+            data)
 
         if location is None:
             return location
@@ -165,8 +175,13 @@ class Harvest(object):
         :return: Project ID
         :rtype: str
         """
-        data = {Harvest.PROJECT: {Harvest.NAME: name, Harvest.CLIENT_ID: client_id, Harvest.BILL_BY: Harvest.TASKS}}
-        location = self.post_request(self.base_url + Harvest.PROJECTS_URL, data)
+        data = {
+            Harvest.PROJECT: {
+                Harvest.NAME: name,
+                Harvest.CLIENT_ID: client_id,
+                Harvest.BILL_BY: Harvest.TASKS}}
+        location = self.post_request(
+            self.base_url + Harvest.PROJECTS_URL, data)
 
         if location is None:
             return location
@@ -220,7 +235,8 @@ class Harvest(object):
         :return: Person
         :rtype: dict
         """
-        return self.get_request(self.base_url + Harvest.PEOPLE_URL + '/' + str(id))
+        return self.get_request(
+            self.base_url + Harvest.PEOPLE_URL + '/' + str(id))
 
     def get_person_by_email(self, email):
         """Retrieve a person by their email
