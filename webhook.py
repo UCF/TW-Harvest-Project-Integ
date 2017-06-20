@@ -344,18 +344,27 @@ class TeamworkHandler(object):
                 project_name, company_abbr, tw_project_id)
             self.teamwork.update_project(new_project_name, tw_project_id)
 
-            # Create Harvest project
-            h_client = self.harvest.get_client_by_name(company_abbr)
-            if h_client:
-                self.harvest.create_project(
-                    new_project_name, h_client[
-                        Harvest.CLIENT][
-                        Harvest.ID])
+            # Check to see if Harvest project already exists first.
+            h_project = self.harvest.get_project_by_name(new_project_name)
+            if h_project:
+                app.logger.error('Harvest project name ' + new_project_name +
+                                 ' already exist. Project not created in Harvest.')
             else:
-                app.logger.error(
-                    'Could not Create Harvest project because Client ' +
-                    company_abbr +
-                    ' does not exist.')
+                # Create Harvest project
+                h_client = self.harvest.get_client_by_name(company_abbr)
+                if h_client:
+                    self.harvest.create_project(
+                        new_project_name, h_client[
+                            Harvest.CLIENT][
+                            Harvest.ID])
+                    app.logger.debug('Harvest project created: ' + new_project_name)
+                else:
+                    app.logger.error(
+                        'Could not Create Harvest project because Client ' +
+                        company_abbr +
+                        ' does not exist.')
+
+
 
     def add_project_prefix(self, project_name, company_abbr,
                            tw_project_id, project_date=None, project_number=None):
