@@ -194,7 +194,7 @@ class TeamworkHandler(object):
         self.teamwork.update_project(new_project_name, tw_project_id)
 
         # Update Harvest project
-        project_prefix = self.get_project_prefix(new_project_name)
+        project_prefix = self.get_project_prefix(company_abbr, tw_project_id)
         h_project = self.harvest.get_project_by_prefix(project_prefix)
         if h_project:
             h_client = self.harvest.get_client_by_name(company_abbr)
@@ -223,8 +223,7 @@ class TeamworkHandler(object):
         app.logger.debug('Teamwork assigned people: ' + str(tw_emails))
 
         try:
-            project_prefix = self.get_project_prefix(new_project_name)
-            h_project = self.harvest.get_project_by_prefix(project_prefix)
+            h_project = self.harvest.get_project_by_name(project_name)
             if h_project is not None:
                 h_project_id = h_project[Harvest.PROJECT][Harvest.ID]
                 h_emails = self.get_h_project_emails(h_project_id)
@@ -349,7 +348,7 @@ class TeamworkHandler(object):
             self.teamwork.update_project(new_project_name, tw_project_id)
 
             # Check to see if Harvest project already exists first.
-            project_prefix = self.get_project_prefix(new_project_name)
+            project_prefix = self.get_project_prefix(company_abbr , tw_project_id)
             h_project = self.harvest.get_project_by_prefix(project_prefix)
             if h_project:
                 app.logger.error('Harvest project name ' + new_project_name +
@@ -394,16 +393,16 @@ class TeamworkHandler(object):
         return project_name
 
     def get_project_prefix(self, company_abbr,
-                        tw_project_id, project_date=None, project_number=None):
-    """Adds the project prefix to the project name
+                            tw_project_id, project_date=None, project_number=None):
+        """Adds the project prefix to the project name
 
-    :param project_name: Project name
-    :param company_abbr: Company abbreviation
-    :param project_date: Project creation date
-    :param project_number: Project number
-    :return: Project Prefix
-    :rtype: str
-    """
+        :param project_name: Project name
+        :param company_abbr: Company abbreviation
+        :param project_date: Project creation date
+        :param project_number: Project number
+        :return: Project Prefix
+        :rtype: str
+        """
     if project_date is None:
         project_date = datetime.datetime.now().strftime('%y%m')
 
