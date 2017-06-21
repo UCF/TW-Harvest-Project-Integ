@@ -223,7 +223,8 @@ class TeamworkHandler(object):
         app.logger.debug('Teamwork assigned people: ' + str(tw_emails))
 
         try:
-            h_project = self.harvest.get_project_by_name(project_name)
+            project_prefix = self.get_project_prefix(new_project_name)
+            h_project = self.harvest.get_project_by_prefix(project_prefix)
             if h_project is not None:
                 h_project_id = h_project[Harvest.PROJECT][Harvest.ID]
                 h_emails = self.get_h_project_emails(h_project_id)
@@ -348,7 +349,8 @@ class TeamworkHandler(object):
             self.teamwork.update_project(new_project_name, tw_project_id)
 
             # Check to see if Harvest project already exists first.
-            h_project = self.harvest.get_project_by_name(new_project_name)
+            project_prefix = self.get_project_prefix(new_project_name)
+            h_project = self.harvest.get_project_by_prefix(project_prefix)
             if h_project:
                 app.logger.error('Harvest project name ' + new_project_name +
                                  ' already exist. Project not created in Harvest.')
