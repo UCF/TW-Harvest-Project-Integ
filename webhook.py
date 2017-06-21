@@ -185,7 +185,7 @@ class TeamworkHandler(object):
         new_project_name = self.add_project_prefix(
             postfix_project_name, company_abbr, tw_project_id, project_date)
         app.logger.debug(
-            'Updating project name ' +
+            'Updating Teamwork project name ' +
             project_name +
             ' to new name ' +
             new_project_name)
@@ -194,13 +194,16 @@ class TeamworkHandler(object):
         self.teamwork.update_project(new_project_name, tw_project_id)
 
         # Update Harvest project
-        h_project = self.harvest.get_project_by_name(project_name)
+        project_prefix = self.get_project_prefix(new_project_name)
+        h_project = self.harvest.get_project_by_prefix(project_prefix)
         if h_project:
             h_client = self.harvest.get_client_by_name(company_abbr)
             if h_client:
                 self.harvest.update_project(h_project[Harvest.PROJECT][Harvest.ID],
                                             new_project_name,
                                             h_client[Harvest.CLIENT][Harvest.ID])
+                app.logger.debug( 'Updating Harvest project name ' + project_name +
+                ' to new name ' + new_project_name)
             else:
                 app.logger.error('Could not update Harvest project because Client ' + company_abbr +
                                  ' does not exist.')
@@ -387,6 +390,28 @@ class TeamworkHandler(object):
         project_name = project_date + "-" + company_abbr + \
             "-" + str(project_number) + " " + project_name
         return project_name
+
+    def get_project_prefix(self, company_abbr,
+                        tw_project_id, project_date=None, project_number=None):
+    """Adds the project prefix to the project name
+
+    :param project_name: Project name
+    :param company_abbr: Company abbreviation
+    :param project_date: Project creation date
+    :param project_number: Project number
+    :return: Project Prefix
+    :rtype: str
+    """
+    if project_date is None:
+        project_date = datetime.datetime.now().strftime('%y%m')
+
+    if project_number is None:
+        project_number = self.get_project_number(
+            company_abbr, tw_project_id)
+
+    project_prefix = project_date + "-" + company_abbr + \
+        "-" + str(project_number)
+    return project_prefix
 
     def get_project_number(self, company_abbr, tw_project_id):
         """Assigns a company_job_id for the Teamwork project

@@ -133,6 +133,20 @@ class Harvest(object):
                     return project
         return None
 
+    def get_project_by_prefix(self, prefix):
+        """Retrieves project by prefix
+
+        :param name: Prefix of project
+        :return: Project
+        :rtype: dict
+        """
+        projects = self.get_projects()
+        if projects:
+            for project in projects:
+                if project[Harvest.PROJECT][Harvest.NAME].startswith( prefix ):
+                    return project
+        return None
+
     def get_todays_updated_projects(self):
         """Retrieves projects that have been updated today.
 
