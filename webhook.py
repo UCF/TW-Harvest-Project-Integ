@@ -170,7 +170,7 @@ class TeamworkHandler(object):
 
                 # Update Harvest project
                 project_prefix = self.get_project_prefix(company_abbr, tw_project_id)
-                h_project = self.harvest.get_project_by_prefix(project_prefix)
+                h_project = self.harvest.get_project_by_prefix(project_prefix, company_abbr)
                 if h_project:
                     h_client = self.harvest.get_client_by_name(company_abbr)
                     if h_client:
@@ -210,7 +210,7 @@ class TeamworkHandler(object):
 
         # Update Harvest project
         project_prefix = self.get_project_prefix(company_abbr, tw_project_id)
-        h_project = self.harvest.get_project_by_prefix(project_prefix)
+        h_project = self.harvest.get_project_by_prefix(project_prefix, company_abbr)
         if h_project:
             h_client = self.harvest.get_client_by_name(company_abbr)
             if h_client:

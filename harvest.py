@@ -101,13 +101,17 @@ class Harvest(object):
             return location
         return location.replace(Harvest.CLIENTS_URL + '/', '')
 
-    def get_projects(self):
+    def get_projects(self, client_id=None):
         """Retrieves all projects
 
         :return: Projects
         :rtype: dict
         """
+        if client_id is None:
         return self.get_request(self.base_url + Harvest.PROJECTS_URL)
+        else:
+            return self.get_request(self.base_url + Harvest.PROJECTS_URL +
+            '?client={' + str(client_id) + '}' )
 
     def get_project(self, project_id):
         """Retrieves project by ID
@@ -119,33 +123,40 @@ class Harvest(object):
         return self.get_request(
             self.base_url + Harvest.PROJECTS_URL + '/' + project_id)
 
-    def get_project_by_name(self, name):
+    def get_project_by_name(self, name, client_name):
         """Retrieves project by name
 
         :param name: Name of project
         :return: Project
         :rtype: dict
         """
-        projects = self.get_projects()
+        client = self.get_client_by_name(client_name)
+        projects = self.get_projects(client[Harvest.CLIENT][Harvest.ID])
         if projects:
             for project in projects:
                 if project[Harvest.PROJECT][Harvest.NAME] == name:
                     return project
         return None
 
-    def get_project_by_prefix(self, prefix):
+    def get_project_by_prefix(self, prefix, client_name):
         """Retrieves project by prefix
 
         :param name: Prefix of project
+        :param name: Client name / company appreviation
         :return: Project
         :rtype: dict
         """
-        projects = self.get_projects()
-        if projects:
-            for project in projects:
-                if project[Harvest.PROJECT][Harvest.NAME].startswith( prefix ):
-                    return project
-        return None
+        client = self.get_client_by_name(client_name)
+        if client:
+            projects = self.get_projects(client[Harvest.CLIENT][Harvest.ID])
+            if projects:
+                for project in projects:
+                    if project[Harvest.PROJECT][Harvest.NAME].startswith( prefix ):
+                        return project
+            else:
+                return None
+        else:
+            return None
 
     def get_todays_updated_projects(self):
         """Retrieves projects that have been updated today.
