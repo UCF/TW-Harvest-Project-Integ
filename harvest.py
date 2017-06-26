@@ -108,10 +108,10 @@ class Harvest(object):
         :rtype: dict
         """
         if client_id is None:
-        return self.get_request(self.base_url + Harvest.PROJECTS_URL)
+            return self.get_request(self.base_url + Harvest.PROJECTS_URL)
         else:
             return self.get_request(self.base_url + Harvest.PROJECTS_URL +
-            '?client={' + str(client_id) + '}' )
+            '?client=' + str(client_id))
 
     def get_project(self, project_id):
         """Retrieves project by ID
