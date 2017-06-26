@@ -111,7 +111,7 @@ class Harvest(object):
             return self.get_request(self.base_url + Harvest.PROJECTS_URL)
         else:
             return self.get_request(self.base_url + Harvest.PROJECTS_URL +
-            '?client=' + str(client_id))
+                                    '?client=' + str(client_id))
 
     def get_project(self, project_id):
         """Retrieves project by ID
@@ -151,7 +151,8 @@ class Harvest(object):
             projects = self.get_projects(client[Harvest.CLIENT][Harvest.ID])
             if projects:
                 for project in projects:
-                    if project[Harvest.PROJECT][Harvest.NAME].startswith( prefix ):
+                    if project[Harvest.PROJECT][Harvest.NAME].startswith(
+                            prefix):
                         return project
             else:
                 return None

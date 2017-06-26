@@ -149,7 +149,8 @@ class TeamworkHandler(object):
                 new_project_name = self.add_project_prefix(project_name, new_company_abbr,
                                                            tw_project_id)
                 # Update Teamwork project
-                self.update_project_name(new_project_name, new_company_abbr, tw_project_id)
+                self.update_project_name(
+                    new_project_name, new_company_abbr, tw_project_id)
                 app.logger.debug(
                     'Project schema appended to name ' +
                     new_project_name)
@@ -169,22 +170,24 @@ class TeamworkHandler(object):
                         company_abbr)
 
                 # Update Harvest project
-                project_prefix = self.get_project_prefix(company_abbr, tw_project_id)
-                h_project = self.harvest.get_project_by_prefix(project_prefix, company_abbr)
+                project_prefix = self.get_project_prefix(
+                    company_abbr, tw_project_id)
+                h_project = self.harvest.get_project_by_prefix(
+                    project_prefix, company_abbr)
                 if h_project:
                     h_client = self.harvest.get_client_by_name(company_abbr)
                     if h_client:
                         self.harvest.update_project(h_project[Harvest.PROJECT][Harvest.ID],
                                                     new_project_name,
                                                     h_client[Harvest.CLIENT][Harvest.ID])
-                        app.logger.debug( 'Updating Harvest project name ' + project_name +
-                        ' to new name ' + new_project_name)
+                        app.logger.debug('Updating Harvest project name ' + project_name +
+                                         ' to new name ' + new_project_name)
                     else:
                         app.logger.error('Could not update Harvest project because Client ' + company_abbr +
-                                        ' does not exist.')
+                                         ' does not exist.')
                 else:
                     app.logger.error('Could not update Harvest project because matching Project name ' + project_name +
-                                    ' does not exist')
+                                     ' does not exist')
 
     def update_project_name(self, project_name, company_abbr, tw_project_id):
         """Update the project name in TeamworkPM and Harvest
@@ -210,15 +213,16 @@ class TeamworkHandler(object):
 
         # Update Harvest project
         project_prefix = self.get_project_prefix(company_abbr, tw_project_id)
-        h_project = self.harvest.get_project_by_prefix(project_prefix, company_abbr)
+        h_project = self.harvest.get_project_by_prefix(
+            project_prefix, company_abbr)
         if h_project:
             h_client = self.harvest.get_client_by_name(company_abbr)
             if h_client:
                 self.harvest.update_project(h_project[Harvest.PROJECT][Harvest.ID],
                                             new_project_name,
                                             h_client[Harvest.CLIENT][Harvest.ID])
-                app.logger.debug( 'Updating Harvest project name ' + project_name +
-                ' to new name ' + new_project_name)
+                app.logger.debug('Updating Harvest project name ' + project_name +
+                                 ' to new name ' + new_project_name)
             else:
                 app.logger.error('Could not update Harvest project because Client ' + company_abbr +
                                  ' does not exist.')
@@ -238,8 +242,10 @@ class TeamworkHandler(object):
         app.logger.debug('Teamwork assigned people: ' + str(tw_emails))
 
         try:
-            project_prefix = self.get_project_prefix(company_abbr , tw_project_id)
-            h_project = self.harvest.get_project_by_prefix(project_prefix, company_abbr)
+            project_prefix = self.get_project_prefix(
+                company_abbr, tw_project_id)
+            h_project = self.harvest.get_project_by_prefix(
+                project_prefix, company_abbr)
             if h_project is not None:
                 h_project_id = h_project[Harvest.PROJECT][Harvest.ID]
                 h_project_name = h_project[Harvest.PROJECT][Harvest.NAME]
@@ -365,8 +371,10 @@ class TeamworkHandler(object):
             self.teamwork.update_project(new_project_name, tw_project_id)
 
             # Check to see if Harvest project already exists first.
-            project_prefix = self.get_project_prefix(company_abbr , tw_project_id)
-            h_project = self.harvest.get_project_by_prefix(project_prefix, company_abbr)
+            project_prefix = self.get_project_prefix(
+                company_abbr, tw_project_id)
+            h_project = self.harvest.get_project_by_prefix(
+                project_prefix, company_abbr)
             if h_project:
                 app.logger.error('Harvest project name ' + new_project_name +
                                  ' already exist. Project not created in Harvest.')
@@ -378,14 +386,14 @@ class TeamworkHandler(object):
                         new_project_name, h_client[
                             Harvest.CLIENT][
                             Harvest.ID])
-                    app.logger.debug('Harvest project created: ' + new_project_name)
+                    app.logger.debug(
+                        'Harvest project created: ' +
+                        new_project_name)
                 else:
                     app.logger.error(
                         'Could not Create Harvest project because Client ' +
                         company_abbr +
                         ' does not exist.')
-
-
 
     def add_project_prefix(self, project_name, company_abbr,
                            tw_project_id, project_date=None, project_number=None):
@@ -410,7 +418,7 @@ class TeamworkHandler(object):
         return project_name
 
     def get_project_prefix(self, company_abbr,
-                            tw_project_id, project_date=None, project_number=None):
+                           tw_project_id, project_date=None, project_number=None):
         """Adds the project prefix to the project name
 
         :param project_name: Project name

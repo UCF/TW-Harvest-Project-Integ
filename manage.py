@@ -66,5 +66,6 @@ def setup_db(recreate=False):
             'manage.py:create_tables() failed, insert_projects aborted.')
         session.close()
 
+
 if __name__ == '__main__':
     manager.run()
