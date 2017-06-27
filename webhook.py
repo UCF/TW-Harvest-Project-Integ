@@ -181,6 +181,7 @@ class TeamworkHandler(object):
                         self.harvest.update_project(h_project[Harvest.PROJECT][Harvest.ID],
                                                     new_project_name,
                                                     new_h_client[Harvest.CLIENT][Harvest.ID])
+                        self.update_project_users(new_company_abbr, tw_project_id)
                         app.logger.debug('Updating Harvest project name ' + project_name +
                                             ' to new name ' + new_project_name)
                     else:
