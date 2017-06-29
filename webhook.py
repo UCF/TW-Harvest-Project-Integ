@@ -163,33 +163,32 @@ class TeamworkHandler(object):
                 if new_company_abbr != company_abbr:
                     new_project_name = self.update_project_name(project_name, new_company_abbr,
                                                                 tw_project_id)
+                    # Update Harvest project
+                    project_prefix = self.get_project_prefix(
+                        company_abbr, tw_project_id)
+                    new_h_client = self.harvest.get_client_by_name(new_company_abbr)
+                    h_project = self.harvest.get_project_by_prefix(
+                        project_prefix, company_abbr)
+                    if h_project:
+                        h_client = self.harvest.get_client_by_name(company_abbr)
+                        if h_client:
+                            self.harvest.update_project(h_project[Harvest.PROJECT][Harvest.ID],
+                                                        new_project_name,
+                                                        new_h_client[Harvest.CLIENT][Harvest.ID])
+                            self.update_project_users(new_company_abbr, tw_project_id)
+                            app.logger.debug('Updating Harvest project name ' + project_name +
+                                                ' to new name ' + new_project_name)
+                        else:
+                            app.logger.error('Could not update Harvest project because Client ' +
+                                            company_abbr + ' does not exist.')
+                    else:
+                        app.logger.error('Could not update Harvest project because matching Project name ' +
+                                        project_name + ' does not exist')
                 else:
                     # Do nothing otherwise run into an infinite loop situation
                     app.logger.debug(
                         'Project company does not need to be updated ' +
                         company_abbr)
-
-                # Update Harvest project
-                project_prefix = self.get_project_prefix(
-                    company_abbr, tw_project_id)
-                new_h_client = self.harvest.get_client_by_name(new_company_abbr)
-                h_project = self.harvest.get_project_by_prefix(
-                    project_prefix, company_abbr)
-                if h_project:
-                    h_client = self.harvest.get_client_by_name(company_abbr)
-                    if h_client:
-                        self.harvest.update_project(h_project[Harvest.PROJECT][Harvest.ID],
-                                                    new_project_name,
-                                                    new_h_client[Harvest.CLIENT][Harvest.ID])
-                        self.update_project_users(new_company_abbr, tw_project_id)
-                        app.logger.debug('Updating Harvest project name ' + project_name +
-                                            ' to new name ' + new_project_name)
-                    else:
-                        app.logger.error('Could not update Harvest project because Client ' +
-                                        company_abbr + ' does not exist.')
-                else:
-                    app.logger.error('Could not update Harvest project because matching Project name ' +                    project_name +
-                                        ' does not exist')
 
     def update_project_name(self, project_name, company_abbr, tw_project_id):
         """Update the project name in TeamworkPM and Harvest
