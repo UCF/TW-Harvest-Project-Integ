@@ -21,7 +21,7 @@ import re
 import settings
 import sys
 
-app = Flask(__name__)
+application = Flask(__name__)
 
 
 log_handler = handlers.TimedRotatingFileHandler(
@@ -35,16 +35,16 @@ log_handler.setFormatter(
         datefmt=settings.LOG_DATE_FMT))
 log_handler.setLevel(settings.LOG_LVL)
 
-app.logger.setLevel(settings.LOG_LVL)
-app.logger.addHandler(log_handler)
+application.logger.setLevel(settings.LOG_LVL)
+application.logger.addHandler(log_handler)
 
 Engine = connect_to_database()
 Session = sessionmaker(bind=Engine)
 
 
-@app.route("/", methods=['POST'])
+@application.route("/", methods=['POST'])
 def post():
-    app.logger.debug('Retrieved webhook')
+    application.logger.debug('Retrieved webhook')
     teamwork_handler = TeamworkHandler()
     teamwork_handler.process_request(request)
     return "Thank you!"
@@ -56,7 +56,7 @@ class TeamworkHandler(object):
         """
         Initializes the handler
         """
-        app.logger.debug('Initiating Handlers...')
+        application.logger.debug('Initiating Handlers...')
         self.teamwork = Teamwork(
             settings.TEAMWORK_BASE_URL,
             settings.TEAMWORK_USER,
@@ -65,22 +65,22 @@ class TeamworkHandler(object):
             settings.HARVEST_BASE_URL,
             settings.HARVEST_USER,
             settings.HARVEST_PASS)
-        app.logger.debug('Finished Initialization')
+        application.logger.debug('Finished Initialization')
 
     def process_request(self, request):
         """
         Process Teamwork POST
         """
-        app.logger.debug('Processing request...')
+        application.logger.debug('Processing request...')
         post_values = request.form
-        app.logger.debug('Retrieved form data')
+        application.logger.debug('Retrieved form data')
 
         for key, val in post_values.items():
-            app.logger.debug('key: ' + key)
-            app.logger.debug('val: ' + val)
+            application.logger.debug('key: ' + key)
+            application.logger.debug('val: ' + val)
 
         event = post_values[Teamwork.EVENT]
-        app.logger.info('Received event type: ' + event)
+        application.logger.info('Received event type: ' + event)
 
         if event == Teamwork.PROJECT_CREATED or event == Teamwork.PROJECT_UPDATED or event == Teamwork.PROJECT_COPIED:
             self.set_project_code(post_values[Teamwork.OBJECT_ID])
@@ -89,7 +89,7 @@ class TeamworkHandler(object):
         elif event == Teamwork.COMPANY_UPDATED:
             self.update_company(post_values[Teamwork.OBJECT_ID])
 
-        app.logger.debug('Finished processing request')
+        application.logger.debug('Finished processing request')
 
     def set_project_code(self, tw_project_id):
         """Prepends the project code to the project name.
@@ -104,18 +104,18 @@ class TeamworkHandler(object):
                 q = session.query(TWProject).filter(
                     TWProject.tw_project_id == tw_project_id)
                 if not session.query(q.exists()).scalar():
-                    app.logger.debug('Webhook project create or copied')
+                    application.logger.debug('Webhook project create or copied')
                     self.create_project(tw_project)
                 else:
-                    app.logger.debug('Webhook project update')
+                    application.logger.debug('Webhook project update')
                     self.update_project(tw_project)
             else:
                 # may be deleted
-                app.logger.warning(
+                application.logger.warning(
                     'Teamwork project does not exist with TeamworkPM ID of ' +
                     tw_project_id)
         except KeyError:
-            app.logger.exception(
+            application.logger.exception(
                 'Could not update project with TeamworkPM ID of ' +
                 tw_project_id)
         finally:
@@ -143,7 +143,7 @@ class TeamworkHandler(object):
             tw_project_id = tw_project[Teamwork.PROJECT][Teamwork.ID]
             if not re.match(
                     settings.TEAMWORK_PROJECT_NAME_SCHEME, project_name):
-                app.logger.debug(
+                application.logger.debug(
                     'Project name does not match schema ' +
                     project_name)
                 new_project_name = self.add_project_prefix(project_name, new_company_abbr,
@@ -151,7 +151,7 @@ class TeamworkHandler(object):
                 # Update Teamwork project
                 self.update_project_name(
                     new_project_name, new_company_abbr, tw_project_id)
-                app.logger.debug(
+                application.logger.debug(
                     'Project schema appended to name ' +
                     new_project_name)
 
@@ -176,17 +176,17 @@ class TeamworkHandler(object):
                                                         new_project_name,
                                                         new_h_client[Harvest.CLIENT][Harvest.ID])
                             self.update_project_users(new_company_abbr, tw_project_id)
-                            app.logger.debug('Updating Harvest project name ' + project_name +
+                            application.logger.debug('Updating Harvest project name ' + project_name +
                                                 ' to new name ' + new_project_name)
                         else:
-                            app.logger.error('Could not update Harvest project because Client ' +
+                            application.logger.error('Could not update Harvest project because Client ' +
                                             company_abbr + ' does not exist.')
                     else:
-                        app.logger.error('Could not update Harvest project because matching Project name ' +
+                        application.logger.error('Could not update Harvest project because matching Project name ' +
                                         project_name + ' does not exist')
                 else:
                     # Do nothing otherwise run into an infinite loop situation
-                    app.logger.debug(
+                    application.logger.debug(
                         'Project company does not need to be updated ' +
                         company_abbr)
 
@@ -203,7 +203,7 @@ class TeamworkHandler(object):
 
         new_project_name = self.add_project_prefix(
             postfix_project_name, company_abbr, tw_project_id, project_date)
-        app.logger.debug(
+        application.logger.debug(
             'Updating Teamwork project name ' +
             project_name +
             ' to new name ' +
@@ -222,13 +222,13 @@ class TeamworkHandler(object):
                 self.harvest.update_project(h_project[Harvest.PROJECT][Harvest.ID],
                                             new_project_name,
                                             h_client[Harvest.CLIENT][Harvest.ID])
-                app.logger.debug('Updating Harvest project name ' + project_name +
+                application.logger.debug('Updating Harvest project name ' + project_name +
                                  ' to new name ' + new_project_name)
             else:
-                app.logger.error('Could not update Harvest project because Client ' + company_abbr +
+                application.logger.error('Could not update Harvest project because Client ' + company_abbr +
                                  ' does not exist.')
         else:
-            app.logger.error('Could not update Harvest project because matching Project name ' + project_name +
+            application.logger.error('Could not update Harvest project because matching Project name ' + project_name +
                              ' does not exist')
 
         return new_project_name
@@ -240,7 +240,7 @@ class TeamworkHandler(object):
         :param tw_project_id: TeamworkPM project ID
         """
         tw_emails = self.get_tw_project_emails(tw_project_id)
-        app.logger.debug('Teamwork assigned people: ' + str(tw_emails))
+        application.logger.debug('Teamwork assigned people: ' + str(tw_emails))
 
         try:
             project_prefix = self.get_project_prefix(
@@ -251,7 +251,7 @@ class TeamworkHandler(object):
                 h_project_id = h_project[Harvest.PROJECT][Harvest.ID]
                 h_project_name = h_project[Harvest.PROJECT][Harvest.NAME]
                 h_emails = self.get_h_project_emails(h_project_id)
-                app.logger.debug('Harvest assigned people: ' + str(h_emails))
+                application.logger.debug('Harvest assigned people: ' + str(h_emails))
 
                 add_people = []
                 remove_people = []
@@ -277,17 +277,17 @@ class TeamworkHandler(object):
                                         Harvest.USER][
                                         Harvest.ID])
                             else:
-                                app.logger.warning(
+                                application.logger.warning(
                                     'No user with this email "' + tw_email + '" exists in Harvest.')
 
-                app.logger.debug(
+                application.logger.debug(
                     'Adding people to project "' +
                     h_project_name +
                     '" ' +
                     str(add_people))
                 for person_id in add_people:
                     self.harvest.add_user_assignment(h_project_id, person_id)
-                app.logger.debug(
+                application.logger.debug(
                     'Removing people from project "' +
                     h_project_name +
                     '" ' +
@@ -296,11 +296,11 @@ class TeamworkHandler(object):
                     self.harvest.remove_user_assignment(
                         h_project_id, person_id)
             else:
-                app.logger.error(
+                application.logger.error(
                     'Harvest project does not exist ' +
                     project_prefix)
         except KeyError:
-            app.logger.exception(
+            application.logger.exception(
                 'Could not update project users for project prefix ' +
                 project_prefix)
 
@@ -352,7 +352,7 @@ class TeamworkHandler(object):
         if Teamwork.COMPANY in tw_company and Teamwork.COMPANY_ABBR in tw_company[
                 Teamwork.COMPANY] and tw_company[Teamwork.COMPANY][Teamwork.COMPANY_ABBR]:
             company_abbr = tw_company[Teamwork.COMPANY][Teamwork.COMPANY_ABBR]
-            app.logger.debug(
+            application.logger.debug(
                 'Creating new project ' +
                 project_name +
                 ' for client ' +
@@ -377,7 +377,7 @@ class TeamworkHandler(object):
             h_project = self.harvest.get_project_by_prefix(
                 project_prefix, company_abbr)
             if h_project:
-                app.logger.error('Harvest project name ' + new_project_name +
+                application.logger.error('Harvest project name ' + new_project_name +
                                  ' already exist. Project not created in Harvest.')
             else:
                 # Create Harvest project
@@ -387,11 +387,11 @@ class TeamworkHandler(object):
                         new_project_name, h_client[
                             Harvest.CLIENT][
                             Harvest.ID])
-                    app.logger.debug(
+                    application.logger.debug(
                         'Harvest project created: ' +
                         new_project_name)
                 else:
-                    app.logger.error(
+                    application.logger.error(
                         'Could not Create Harvest project because Client ' +
                         company_abbr +
                         ' does not exist.')
@@ -458,7 +458,7 @@ class TeamworkHandler(object):
             session.commit()
         except SQLAlchemyError as error:
             session.rollback()
-            app.logger.critical(
+            application.logger.critical(
                 'Failed to commit TW project to database: {0}'.format(
                     str(error)))
             abort(404)
@@ -467,7 +467,7 @@ class TeamworkHandler(object):
             TWProject.tw_project_id == tw_project_id).one()
         project_number = fetched.company_job_id
 
-        app.logger.debug(
+        application.logger.debug(
             'Successfully committed record: {0}'.format(
                 str(fetched)))
         session.close()
@@ -478,7 +478,7 @@ class TeamworkHandler(object):
 
         :param company_id: Teamwork company ID
         """
-        app.logger.debug(
+        application.logger.debug(
             'Creating company with Teamwork ID ' +
             str(company_id))
         tw_company = self.teamwork.get_company(company_id)
@@ -487,7 +487,7 @@ class TeamworkHandler(object):
         if company_abbr:
             self.harvest.create_client(company_abbr)
         else:
-            app.logger.warning('Could not create company in Harvest because the abbreviation (addr one) is empty for ' +
+            application.logger.warning('Could not create company in Harvest because the abbreviation (addr one) is empty for ' +
                                tw_company[Teamwork.COMPANY][Teamwork.NAME])
 
     def update_company(self, company_id):
@@ -495,7 +495,7 @@ class TeamworkHandler(object):
 
         :param company_id: Teamwork company ID
         """
-        app.logger.debug(
+        application.logger.debug(
             'Updating company with Teamwork ID ' +
             str(company_id))
         tw_company = self.teamwork.get_company(company_id)
@@ -505,9 +505,9 @@ class TeamworkHandler(object):
         if not h_company and company_abbr:
             self.harvest.create_client(company_abbr)
         else:
-            app.logger.warning('Company already exists in Harvest or the abbreviation (addr one) is empty ("' +
+            application.logger.warning('Company already exists in Harvest or the abbreviation (addr one) is empty ("' +
                                str(company_abbr) + '") for company ' + tw_company[Teamwork.COMPANY][Teamwork.NAME])
 
 
 if __name__ == '__main__':
-    app.run()
+    application.run()

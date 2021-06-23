@@ -16,11 +16,11 @@ import settings
 class TWProjectPipeline(object):
 
     def __init__(self):
-        app.logger.debug('Kicking up the processor...')
+        application.logger.debug('Kicking up the processor...')
         self.teamwork = Teamwork(settings.TEAMWORK_BASE_URL,
                                  settings.TEAMWORK_USER,
                                  settings.TEAMWORK_PASS)
-        app.logger.debug('Ready to process project(s)')
+        application.logger.debug('Ready to process project(s)')
 
     def process_project(self, data, session):
         a_project = TWProject(**data)
@@ -28,7 +28,7 @@ class TWProjectPipeline(object):
             session.add(a_project)
             session.commit()
         except SQLAlchemyError:
-            app.logger.critical('Failed to commit Teamwork project ID to database: {0}'
+            application.logger.critical('Failed to commit Teamwork project ID to database: {0}'
                                 .format(str(a_project.tw_project_id)))
             session.rollback()
         finally:
@@ -58,8 +58,8 @@ class TWProjectPipeline(object):
                     self.process_project(data, session)
 
             project_count = int(session.query(TWProject).count())
-            app.logger.debug(
+            application.logger.debug(
                 'Done. Added {0} project(s) to database'.format(project_count))
         else:
-            app.logger.critical('Could not retrieve project(s) from Teamwork.')
+            application.logger.critical('Could not retrieve project(s) from Teamwork.')
             abort(404)
