@@ -1,4 +1,4 @@
-from flask.ext.script import Manager
+from flask_script import Manager
 
 from jobs.models import Base
 
@@ -7,13 +7,13 @@ from jobs.process import TWProjectPipeline
 from sqlalchemy.engine import reflection
 from sqlalchemy_utils import database_exists
 
-from webhook import app
+from webhook import application
 from webhook import Engine as engine
 from webhook import Session
 
 import sys
 
-manager = Manager(app)
+manager = Manager(application)
 
 
 def has_tables():

@@ -7,7 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from teamwork import Teamwork
 
-from webhook import app
+from webhook import application
 
 import re
 import settings
