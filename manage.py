@@ -1,4 +1,4 @@
-from flask.ext.script import Manager
+from flask_script import Manager
 
 from jobs.models import Base
 
@@ -7,13 +7,13 @@ from jobs.process import TWProjectPipeline
 from sqlalchemy.engine import reflection
 from sqlalchemy_utils import database_exists
 
-from webhook import app
+from webhook import application
 from webhook import Engine as engine
 from webhook import Session
 
 import sys
 
-manager = Manager(app)
+manager = Manager(application)
 
 
 def has_tables():
@@ -25,7 +25,7 @@ def create_tables(recreate):
     session = Session()
 
     if not database_exists(engine.url):
-        app.logger.error(
+        application.logger.error(
             'manage.py:create_tables() failed, database not found.')
         raise Exception('database not found')
 
@@ -34,18 +34,18 @@ def create_tables(recreate):
             sys.stdout.write('re-creating Teamwork tables...' + '\n')
             Base.metadata.drop_all(bind=engine, checkfirst=True)
             Base.metadata.create_all(engine, checkfirst=True)
-            app.logger.debug(
+            application.logger.debug(
                 'manage.py:create_tables(), tables re-created.')
             return
         else:
-            app.logger.warning(
+            application.logger.warning(
                 'manage.py:create_tables(), tables found, table recreation is disabled.')
             raise Exception(
                 'tables already exist, use: "--recreate" to re-create tables' + '\n')
     else:
         Base.metadata.create_all(engine, checkfirst=True)
         sys.stdout.write('creating tables' + '\n')
-        app.logger.debug(
+        application.logger.debug(
             'manage.py:create_tables(), no tables found, tables created.')
 
 
@@ -62,7 +62,7 @@ def setup_db(recreate=False):
         session.close()
     except Exception as error:
         print 'Error: {0}'.format(error)
-        app.logger.warning(
+        application.logger.warning(
             'manage.py:create_tables() failed, insert_projects aborted.')
         session.close()
 

@@ -2,10 +2,10 @@
 
 This project integrates our TeamworkPM and Harvest web applications. It syncs companies, project names, people assigned, and time spent on projects.
 
-## Setup 
+## Setup
 With [Virtualenv](https://virtualenv.readthedocs.org/en/latest/), run:
 ```shell
-$ virtualenv teamwork-venv-2.6.6 && cd "$_" && source bin/activate
+$ virtualenv teamwork-venv-2.7 && cd "$_" && source bin/activate
 ```
 
 Configure ``settings_local.py`` + install app dependencies:
@@ -21,12 +21,15 @@ $ python manage.py setup_db
 ```
 
 ## Webhook Info
-Note -- ``webhook.py`` is triggered on POST by three events:
+Note -- ``webhook.py`` is triggered on POST by five events:
 * PROJECT.CREATED
 * PROJECT.UPDATED
 * PROJECT.COPIED
+* COMPANY.CREATED
+* COMPANY.UPDATED
 
 ## Requirements
 Python 2.7
-Flask 0.9
+Flask 1.1.4
+Flask-Script 2.0.5
 Requests 1.1.0
