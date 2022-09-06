@@ -66,6 +66,8 @@ class Harvest(object):
         :rtype: dict
         """
         clients = self.get_clients()
+        if not hasattr(clients, '__iter__'):
+            return None
         for client in clients:
             if client[Harvest.CLIENT][Harvest.NAME] == name:
                 return client
