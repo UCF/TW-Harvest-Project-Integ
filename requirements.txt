@@ -16,4 +16,4 @@ six==1.10.0
 SQLAlchemy-Utils==0.37.0
 SQLAlchemy==1.4.20
 urllib3==1.26.5
-Werkzeug==1.0.1
+Werkzeug==2.2.3
